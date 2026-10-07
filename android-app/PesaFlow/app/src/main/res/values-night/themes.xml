@@ -1,0 +1,9 @@
+<resources>
+    <!-- Night splash: charcoal window so launch never flashes white. -->
+    <style name="Theme.PesaFlow" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">#FF121212</item>
+        <item name="android:windowBackground">#FF121212</item>
+        <item name="android:navigationBarColor">#FF1E1E1E</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

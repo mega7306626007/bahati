@@ -1,0 +1,9 @@
+<resources>
+    <!-- Day splash: papayawhip window so launch never flashes white. -->
+    <style name="Theme.PesaFlow" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">#FFFFEFD5</item>
+        <item name="android:windowBackground">#FFFFEFD5</item>
+        <item name="android:navigationBarColor">#FFFFF8EC</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>
