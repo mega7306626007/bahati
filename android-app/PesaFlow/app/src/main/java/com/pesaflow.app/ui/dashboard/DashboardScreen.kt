@@ -91,7 +91,7 @@ fun DashboardScreen(
     var fixAmt by remember { mutableStateOf("") }
 
     val engine = remember { RhythmEngine(viewModel.repository) }
-    val proposals = engine.propose(transactions, livingGroup)
+    val proposals = remember(transactions, livingGroup) { engine.propose(transactions, livingGroup) }
     // Rhythm cards the user swiped away this session — no server round-trip,
     // the dismiss button just works (it used to do nothing).
     var dismissedRhythms by remember { mutableStateOf(setOf<String>()) }
