@@ -5,9 +5,6 @@ package com.pesaflow.app.ui.dashboard
 // focused on normalization, entity extraction and intent scoring.
 object BuddyBrain {
 
-    // Intents whose follow-ups accept a day entity ("and yesterday?").
-    private val DAY_INTENTS = setOf("spend", "week", "summary", "balance", "budget", "food", "transport")
-
     private val INTENTS: List<Pair<String, List<String>>> = listOf(
         "greeting" to listOf("hello", "hey", "habari", "sasa", "mambo", "niaje", "wassup"),
         "help" to listOf("help", "unaeza", "nisaidie", "saidia", "how do i", "what can you"),
@@ -70,11 +67,6 @@ object BuddyBrain {
         return sb.toString()
     }
 
-    private val ONES = mapOf(
-        "moja" to 1, "mbili" to 2, "tatu" to 3, "nne" to 4, "tano" to 5,
-        "sita" to 6, "saba" to 7, "nane" to 8, "tisa" to 9, "kumi" to 10
-    )
-
     // Amounts: digits first, then Sheng/Swahili number words, then Xk shorthand.
     fun extractAmount(q: String): Double? {
         Regex("(\\d[\\d,]*)").find(q)?.value?.replace(",", "")?.toDoubleOrNull()?.let { return it }
@@ -87,16 +79,6 @@ object BuddyBrain {
         if (q.contains("soo") || q.contains("mia")) return 100.0
         return null
     }
-
-    private val DAY_WORDS = mapOf(
-        "monday" to "monday", "tuesday" to "tuesday", "wednesday" to "wednesday",
-        "thursday" to "thursday", "friday" to "friday", "saturday" to "saturday",
-        "sunday" to "sunday", "yesterday" to "yesterday", "jana" to "yesterday",
-        "today" to "today", "leo" to "today", "tomorrow" to "tomorrow", "kesho" to "tomorrow"
-    )
-
-    fun extractDay(q: String): String? =
-        DAY_WORDS.entries.firstOrNull { q.contains(it.key) }?.value
 
     data class Scored(val name: String, val conf: Float)
 
