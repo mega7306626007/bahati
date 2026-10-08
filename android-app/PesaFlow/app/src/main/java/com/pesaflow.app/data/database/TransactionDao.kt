@@ -43,6 +43,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE sourceTransactionId = :code")
     suspend fun findBySourceCode(code: String): Transaction?
 
+    @Query("SELECT sourceTransactionId FROM transactions WHERE sourceTransactionId IN (:codes)")
+    suspend fun findExistingSourceCodes(codes: List<String>): List<String?>
+
 
     @Query("SELECT COUNT(*) FROM transactions WHERE dateTimestamp >= :start AND dateTimestamp <= :end")
     fun countInTimeframe(start: Long, end: Long): Long
