@@ -109,7 +109,7 @@ object ReminderScheduler {
             .setInitialDelay(delay, TimeUnit.MILLISECONDS)
             .addTag(DIGEST_TAG)
             .build()
-        WorkManager.getInstance(context).enqueueUniqueWork(DIGEST_TAG, androidx.work.ExistingWorkPolicy.REPLACE, req)
+        WorkManager.getInstance(context).enqueueUniqueWork(DIGEST_TAG, androidx.work.ExistingWorkPolicy.KEEP, req)
     }
 
     fun cancelDailyDigest(context: Context) {
@@ -130,7 +130,7 @@ object ReminderScheduler {
             .setInitialDelay(delay, TimeUnit.MILLISECONDS)
             .addTag(BUDGET_CROSSING_TAG)
             .build()
-        WorkManager.getInstance(context).enqueueUniqueWork(BUDGET_CROSSING_TAG, androidx.work.ExistingWorkPolicy.REPLACE, req)
+        WorkManager.getInstance(context).enqueueUniqueWork(BUDGET_CROSSING_TAG, androidx.work.ExistingWorkPolicy.KEEP, req)
     }
 
     fun cancelBudgetCrossingAlert(context: Context) {
