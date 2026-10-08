@@ -222,61 +222,53 @@ fun processUserInput(
     viewModel: FinanceViewModel,
     messages: MutableState<List<ChatMessage>>
 ) {
-    // Add user message to chat
-    messages.value = listOf(
-        ChatMessage(text = userInput, isUser = true),
-        ChatMessage(text = "Thinking...", isUser = false)
-    )
+    // Show the user message once; do not recursively rewrite follow-ups.
+    messages.value = (
+        messages.value.filterNot { !it.isUser && it.text == "Thinking..." } +
+            listOf(
+                ChatMessage(text = userInput, isUser = true),
+                ChatMessage(text = "Thinking...", isUser = false)
+            )
+        ).takeLast(40)
 
-    // Intent layer: normalize (append-only synonyms, old branches keep matching),
-    // follow-up memory ("and yesterday?"), close-tie disambiguation.
-    val qRaw = userInput.lowercase()
+    // Resolve ambiguous follow-ups before intent handling. Explicit topics stay authoritative.
+    val inputRaw = userInput.trim().lowercase()
+    val inputQ = BuddyBrain.normalize(inputRaw)
+    val resolved = BuddyBrain.rewriteFollowUp(inputRaw, inputQ)
+    val qRaw = resolved ?: inputRaw
     val q = BuddyBrain.normalize(qRaw)
-    BuddyBrain.rewriteFollowUp(qRaw, q)?.let { return processUserInput(it, viewModel, messages) }
     val early: String? = BuddyBrain.disambiguate(q)
     val txs = viewModel.allTransactions.value
-    val nowCal = java.util.Calendar.getInstance()
-    val dayStart = (nowCal.clone() as java.util.Calendar).apply {
-        set(java.util.Calendar.HOUR_OF_DAY, 0)
-        set(java.util.Calendar.MINUTE, 0)
-        set(java.util.Calendar.SECOND, 0)
-        set(java.util.Calendar.MILLISECOND, 0)
-    }.timeInMillis
-    // Shared timeline: last 7 days including today (identical numbers).
-    val (weekStart, _) = com.pesaflow.app.data.academic.last7DaysRange(System.currentTimeMillis())
-    fun inMonth(ts: Long): Boolean {
-        val c = java.util.Calendar.getInstance().apply { timeInMillis = ts }
-        return c.get(java.util.Calendar.YEAR) == nowCal.get(java.util.Calendar.YEAR) &&
-            c.get(java.util.Calendar.MONTH) == nowCal.get(java.util.Calendar.MONTH)
-    }
-    val monthTx = txs.filter { inMonth(it.dateTimestamp) }
-    val monthIncome = monthTx.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-    val monthExpense = monthTx.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
-    val todaySpend = txs.filter { it.type == TransactionType.EXPENSE && it.dateTimestamp >= dayStart }.sumOf { it.amount }
-    val weekSpend = txs.filter { it.type == TransactionType.EXPENSE && it.dateTimestamp >= weekStart }.sumOf { it.amount }
-    val balance = viewModel.availableBalance.value
-    val saved = viewModel.totalSavings.value
+    val snapshot = viewModel.financialSnapshot.value
+    val nowCal = java.util.Calendar.getInstance().apply { timeInMillis = snapshot.nowMs }
+
+    // Common ledger aggregates are calculated once in the ViewModel snapshot.
+    val monthIncome = snapshot.monthIncome
+    val monthExpense = snapshot.monthExpense
+    val todaySpend = snapshot.todayExpense
+    val weekSpend = snapshot.weekExpense
+    val yesterdaySpend = snapshot.yesterdayExpense
+    val balance = snapshot.balance
+    val saved = snapshot.totalSavings
     val goals = viewModel.savingsGoals.value
     val belongings = viewModel.belongings.value
     val pantry = viewModel.kitchenStock.value
-    val byCat = monthTx.filter { it.type == TransactionType.EXPENSE }.groupBy { it.category }.mapValues { e -> e.value.sumOf { it.amount } }
+    val byCat = snapshot.monthExpenseByCategory
     val topCat = byCat.maxByOrNull { it.value }
     val budget = viewModel.budgets.value.firstOrNull { it.category == "ALL" }
-    val daysLeft = nowCal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH) - nowCal.get(java.util.Calendar.DAY_OF_MONTH) + 1
-    val yesterdayStart = dayStart - 24L * 60 * 60 * 1000
-    val yesterdaySpend = txs.filter { it.type == TransactionType.EXPENSE && it.dateTimestamp >= yesterdayStart && it.dateTimestamp < dayStart }.sumOf { it.amount }
+    val daysLeft = snapshot.daysLeftInMonth
     val openBills = viewModel.bills.value.filter { it.status != "PAID" }
     val openBillTotal = openBills.sumOf { it.amount }
     val openDebts = viewModel.debts.value.filter { it.status != "PAID" }
     val openDebtTotal = openDebts.sumOf { it.amount }
-    // Money already spoken for: unpaid bills + debts I owe. Runway/afford/safe
-    // answer against what's actually free, never the raw balance.
     val iOweTotal = openDebts.filter { it.direction == "I_OWE" }.sumOf { it.amount }
     val committed = openBillTotal + iOweTotal
     val freeBalance = balance - committed
     val mealCount = viewModel.mealItems.value.size
     val foodBudgetAmt = viewModel.budgets.value.firstOrNull { it.category == "Food" }?.limitAmount
-    val askedCat = byCat.keys.filter { it !in listOf("Food", "Transport", "Rent", "Airtime", "Data") }.firstOrNull { q.contains(it.lowercase()) }
+    val askedCat = byCat.keys
+        .filter { it !in listOf("Food", "Transport", "Rent", "Airtime", "Data") }
+        .firstOrNull { q.contains(it.lowercase()) }
     val nmRaw = viewModel.nickname.value.ifBlank { viewModel.userName.value }
     val nmEx = if (nmRaw.isNotBlank()) " $nmRaw" else ""
     val foodTotal = byCat["Food"] ?: 0.0
@@ -289,7 +281,7 @@ fun processUserInput(
                 val worry = viewModel.getOnboardingAnswers().split("|")
                     .firstOrNull { it.startsWith("worry=") }
                     ?.removePrefix("worry=")?.takeIf { it.isNotBlank() }
-                "Hey$nmEx! I'm PesaBuddy 👋." +
+                BuddyHumor.greeting(BuddyMemory.snapshot().turnCount) + nmEx +
                     (if (worry != null) " I remember $worry worries you most — ask 'what should I buy first?' anytime." else "") +
                     " Ask me about spending, budgets, savings, stock or balances."
             }
@@ -298,21 +290,21 @@ fun processUserInput(
             "I answer from your real records: today/yesterday/this week, income, biggest expense, any category ('how much shopping?'), budget status, safe daily spend, savings, balance, bills, debts, even your meal plan. Try 'give me a summary!'"
 
         q.contains("thank") || q.contains("asante") || q.contains("poa") ->
-            "Karibu sana! 🎉 Keep tracking — small daily records beat big monthly guesses."
+            BuddyHumor.thanks(BuddyMemory.snapshot().turnCount)
 
         q.contains("today") || q.contains("leo") ->
             if (txs.isEmpty()) "No transactions recorded yet — add your first expense and I'll track it here."
             else "Today ume-spend KSh ${todaySpend.toInt()} so far. Month total: KSh ${monthExpense.toInt()}."
 
         (q.contains("week") || q.contains("wiki")) && askedCat != null ->
-            "$askedCat this week: KSh ${txs.filter { it.type == TransactionType.EXPENSE && it.dateTimestamp >= weekStart && it.category.equals(askedCat, ignoreCase = true) }.sumOf { it.amount }.toInt()}."
+            askedCat + " this week: KSh " + snapshot.weekCategory(askedCat).toInt() + "."
 
         ((q.contains("yesterday") || q.contains("jana")) && askedCat != null) ->
-            "Yesterday $askedCat: KSh ${txs.filter { it.type == TransactionType.EXPENSE && it.dateTimestamp >= yesterdayStart && it.dateTimestamp < dayStart && it.category.equals(askedCat, ignoreCase = true) }.sumOf { it.amount }.toInt()}."
+            "Yesterday " + askedCat + ": KSh " + snapshot.yesterdayCategory(askedCat).toInt() + "."
 
         q.contains("top spends") || q.contains("biggest expenses") || q.contains("largest expenses") || q.contains("orodha") ->
             run {
-                val top5 = txs.filter { it.type == TransactionType.EXPENSE }.sortedByDescending { it.amount }.take(5)
+                val top5 = snapshot.topExpenses
                 if (top5.isEmpty()) "No expenses yet — nothing to rank."
                 else "Biggest hits: " + top5.joinToString("; ") { "${it.merchant.take(20)} KSh ${it.amount.toInt()}" } + "."
             }
@@ -476,14 +468,7 @@ fun processUserInput(
 
         q.contains("compare") || q.contains("vs last") || q.contains("difference") ->
             run {
-                val ref = (nowCal.clone() as java.util.Calendar).apply { add(java.util.Calendar.MONTH, -1) }
-                val lastMonthExp = txs.filter {
-                    it.type == TransactionType.EXPENSE &&
-                        java.util.Calendar.getInstance().apply { timeInMillis = it.dateTimestamp }.let { c ->
-                            c.get(java.util.Calendar.YEAR) == ref.get(java.util.Calendar.YEAR) &&
-                                c.get(java.util.Calendar.MONTH) == ref.get(java.util.Calendar.MONTH)
-                        }
-                }.sumOf { it.amount }
+                val lastMonthExp = snapshot.lastMonthExpense
                 if (lastMonthExp <= 0) "No data from last month to compare — keep logging! 📊"
                 else {
                     val diff = monthExpense - lastMonthExp
@@ -580,7 +565,7 @@ fun processUserInput(
 
         userInput.lowercase().contains("salary") || userInput.lowercase().contains("income") ->
             run {
-                val topIn = monthTx.filter { it.type == TransactionType.INCOME }.groupBy { it.category }.mapValues { e -> e.value.sumOf { it.amount } }.maxByOrNull { it.value }
+                val topIn = snapshot.monthIncomeByCategory.maxByOrNull { it.value }
                 val appCtx = viewModel.getApplication<android.app.Application>().applicationContext
                 val expected = com.pesaflow.app.data.income.IncomeSourceStore.totalExpected(appCtx)
                 val declared = com.pesaflow.app.data.income.IncomeSourceStore.load(appCtx).takeIf { it.isNotEmpty() }
@@ -818,10 +803,22 @@ fun processUserInput(
         }
     }
 
-    // Remember a confident intent so entity-only follow-ups resolve next turn.
-    BuddyBrain.classify(q).firstOrNull()?.takeIf { it.conf >= 0.5f }?.let { BuddyMemory.lastIntent = it.name }
-    // Append, don't wipe: keep the conversation, drop the stale "Thinking...".
-    messages.value = (messages.value.filterNot { !it.isUser && it.text == "Thinking..." } +
-        listOf(ChatMessage(text = userInput, isUser = true), ChatMessage(text = response, isUser = false))
+    val scored = BuddyBrain.classify(q).firstOrNull()
+    val intent = scored?.takeIf { it.conf >= 0.5f }?.name
+    val topic = BuddyFollowUpResolver.detectTopic(q) ?: intent
+    val entities = BuddyFollowUpResolver.extractEntities(q)
+    val timeWindow = BuddyFollowUpResolver.detectTimeWindow(q) ?: BuddyMemory.snapshot().timeWindow
+    val decorated = BuddyHumor.decorate(response, intent, BuddyMemory.snapshot().turnCount + 1)
+
+    BuddyMemory.remember(
+        userInput = userInput,
+        response = decorated,
+        topic = topic,
+        entities = entities,
+        timeWindow = timeWindow
+    )
+
+    messages.value = (
+        messages.value.filterNot { !it.isUser && it.text == "Thinking..." } +
+            ChatMessage(text = decorated, isUser = false)
         ).takeLast(40)
-}
