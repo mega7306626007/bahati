@@ -17,7 +17,10 @@ interface PendingTransactionDao {
 
 
     @Query("SELECT * FROM pending_transactions WHERE sourceTransactionId = :code")
-    suspend fun findBySourceCode(code: String): PendingTransaction?
+    suspend fun findBySourceCode(code: String)?
+
+    @Query("SELECT sourceTransactionId FROM pending_transactions WHERE sourceTransactionId IN (:codes)")
+    suspend fun findExistingSourceCodes(codes: List<String>): List<String?>
 
 
     @Query("SELECT EXISTS(SELECT 1 FROM pending_transactions WHERE sourceTransactionId = :code LIMIT 1)")
