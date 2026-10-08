@@ -1,14 +1,8 @@
 package com.pesaflow.app.ui.dashboard
 
 // PesaBuddy intent layer: scored multilingual intents over the keyword chain.
-// Three jobs: (1) synonym expansion (append-only, never rewrites — zero
-// regression risk to the existing branches), (2) entity extraction (amounts
-// incl. number-words, days), (3) follow-up memory ("and yesterday?" reuses
-// the last intent). Ties ask back instead of guessing wrong.
-object BuddyMemory {
-    var lastIntent: String? = null
-}
-
+// Conversation state lives in BuddyConversation.kt so the classifier remains
+// focused on normalization, entity extraction and intent scoring.
 object BuddyBrain {
 
     // Intents whose follow-ups accept a day entity ("and yesterday?").
@@ -114,22 +108,10 @@ object BuddyBrain {
         }.sortedByDescending { it.conf }
     }
 
-    // Entity-only follow-up + live memory → explicit rewritten query. Null = handle normally.
-    fun rewriteFollowUp(raw: String, q: String): String? {
-        val mem = BuddyMemory.lastIntent ?: return null
-        if (classify(q).firstOrNull()?.conf ?: 0f >= 0.5f) return null
-        val day = extractDay(raw)
-        val amt = extractAmount(raw)
-        val isBare = day != null || amt != null ||
-            raw.trim().matches(Regex("^(and|na|what about|hiyo|hii|that|it)\\b.*"))
-        if (!isBare) return null
-        return when {
-            day != null && mem in DAY_INTENTS -> "how much did i spend $day"
-            amt != null && mem == "afford" -> "can i afford ${amt.toInt()}"
-            day != null && mem == "busy" -> "am i busy $day"
-            else -> null
-        }
-    }
+    // Delegate context resolution to the dedicated conversation layer.
+    // Explicit topic words are never rewritten, so topic switches remain authoritative.
+    fun rewriteFollowUp(raw: String, q: String): String? =
+        BuddyFollowUpResolver.resolve(raw, BuddyMemory.snapshot())
 
     // Close tie between two known intents → ask back with examples, never guess.
     fun disambiguate(q: String): String? {
