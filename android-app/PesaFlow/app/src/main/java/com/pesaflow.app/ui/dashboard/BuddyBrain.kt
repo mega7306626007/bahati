@@ -67,6 +67,11 @@ object BuddyBrain {
         return sb.toString()
     }
 
+    private val ONES = mapOf(
+        "moja" to 1, "mbili" to 2, "tatu" to 3, "nne" to 4, "tano" to 5,
+        "sita" to 6, "saba" to 7, "nane" to 8, "tisa" to 9, "kumi" to 10
+    )
+
     // Amounts: digits first, then Sheng/Swahili number words, then Xk shorthand.
     fun extractAmount(q: String): Double? {
         Regex("(\\d[\\d,]*)").find(q)?.value?.replace(",", "")?.toDoubleOrNull()?.let { return it }
