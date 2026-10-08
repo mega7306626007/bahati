@@ -43,6 +43,7 @@ fun BudgetsScreen(viewModel: FinanceViewModel) {
     val wallet by viewModel.availableBalance.collectAsState()
     val profile by viewModel.universityProfile.collectAsState()
     val allBills by viewModel.bills.collectAsState()
+    val financialSnapshot by viewModel.financialSnapshot.collectAsState()
     var tab by remember { mutableStateOf("Monthly") }
     var calcIncome by remember { mutableStateOf("") }
     var calcRule by remember { mutableStateOf("Student") }
@@ -99,14 +100,27 @@ fun BudgetsScreen(viewModel: FinanceViewModel) {
     }
     val (windowStart, windowEnd) = window
     val target = budgets.filter { it.type == periodType }.sumOf { it.limitAmount }
-    val spent = transactions
-        .filter { it.type == TransactionType.EXPENSE && it.dateTimestamp >= windowStart && it.dateTimestamp < windowEnd }
-        .sumOf { it.amount }
-    // Envelope carryover: last month's unspent rolls into this month's target
+    // Daily/weekly/monthly windows reuse the canonical snapshot. Only the
+    // less-common semester/annual paths still need a local transaction scan.
+    val spent = when (tab) {
+        "Daily" -> financialSnapshot.todayExpense
+        "Weekly" -> financialSnapshot.weekExpense
+        "Monthly" -> financialSnapshot.monthExpense
+        else -> transactions
+            .asSequence()
+            .filter { it.type == TransactionType.EXPENSE && it.dateTimestamp >= windowStart && it.dateTimestamp < windowEnd }
+            .sumOf { it.amount }
+    }
+    // Envelope carryover: last month's unspent rolls into this month's target.
     val prevWindowStart = monthStartOf(monthStartOf(now) - 24L * 60 * 60 * 1000)
-    val lastSpent = transactions
-        .filter { it.type == TransactionType.EXPENSE && it.dateTimestamp >= prevWindowStart && it.dateTimestamp < windowStart }
-        .sumOf { it.amount }
+    val lastSpent = if (tab == "Monthly") {
+        financialSnapshot.lastMonthExpense
+    } else {
+        transactions
+            .asSequence()
+            .filter { it.type == TransactionType.EXPENSE && it.dateTimestamp >= prevWindowStart && it.dateTimestamp < windowStart }
+            .sumOf { it.amount }
+    }
     val carry = if (tab == "Monthly") (target - lastSpent).coerceAtLeast(0.0) else 0.0
     val displayTarget = target + carry
     val left = displayTarget - spent
