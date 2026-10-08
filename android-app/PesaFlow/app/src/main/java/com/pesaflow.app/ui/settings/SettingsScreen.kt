@@ -972,11 +972,13 @@ fun SettingsScreen(viewModel: FinanceViewModel) {
             item {
                 val feedback by viewModel.modelFeedback.collectAsState()
                 val trainingOptIn by viewModel.trainingOptIn.collectAsState()
-                var diag by remember { mutableStateOf("Evaluating on-device…") }
+                var diag by remember { mutableStateOf("Diagnostics are on demand to keep Settings fast.") }
                 var diagWorst by remember { mutableStateOf("") }
                 var exportMsg by remember { mutableStateOf("") }
+                var runDiagnostics by remember { mutableStateOf(false) }
                 val exportScope = rememberCoroutineScope()
-                LaunchedEffect(Unit) {
+                LaunchedEffect(runDiagnostics) {
+                    if (!runDiagnostics) return@LaunchedEffect
                     kotlinx.coroutines.withContext(Dispatchers.Default) {
                         try {
                             val typeData = com.pesaflow.app.data.ml.TransactionClassifier.trainingData
@@ -1000,6 +1002,7 @@ fun SettingsScreen(viewModel: FinanceViewModel) {
                             diag = "Evaluation unavailable: ${e.message}"
                         }
                     }
+                    runDiagnostics = false
                 }
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -1011,6 +1014,11 @@ fun SettingsScreen(viewModel: FinanceViewModel) {
                         com.pesaflow.app.data.ml.MlEngine.modelCards().forEach { card ->
                             Text("• $card", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = { runDiagnostics = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Run diagnostics") }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(diag, style = MaterialTheme.typography.bodySmall)
                         if (diagWorst.isNotBlank()) {
