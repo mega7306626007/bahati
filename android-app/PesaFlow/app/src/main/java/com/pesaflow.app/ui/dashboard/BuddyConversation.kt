@@ -58,8 +58,8 @@ object BuddyFollowUpResolver {
     private val timeTerms = linkedMapOf(
         "TODAY" to listOf("today", "leo"),
         "YESTERDAY" to listOf("yesterday", "jana"),
-        "THIS_WEEK" to listOf("this week", "week", "wiki", "7 days"),
         "LAST_WEEK" to listOf("last week", "wiki iliyopita"),
+        "THIS_WEEK" to listOf("this week", "wiki hii", "7 days"),
         "THIS_MONTH" to listOf("this month", "mwezi huu"),
         "LAST_MONTH" to listOf("last month", "mwezi uliopita")
     )
