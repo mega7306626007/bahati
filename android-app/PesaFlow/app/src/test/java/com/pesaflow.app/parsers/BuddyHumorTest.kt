@@ -23,6 +23,12 @@ class BuddyHumorTest {
     }
 
     @Test
+    fun errorVariantIsAvailable() {
+        assertTrue(BuddyHumor.error(0).isNotBlank())
+        assertTrue(BuddyHumor.error(1).isNotBlank())
+    }
+
+    @Test
     fun occasionalQuipIsBoundedAndDeterministic() {
         val base = "This month you spent KSh 4000 on food."
         val fifthTurn = BuddyHumor.decorate(base, "food", 5)
