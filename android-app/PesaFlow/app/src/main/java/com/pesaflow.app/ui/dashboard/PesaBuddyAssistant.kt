@@ -274,7 +274,7 @@ fun processUserInput(
     val foodTotal = byCat["Food"] ?: 0.0
     val transportTotal = byCat["Transport"] ?: 0.0
     val livingGroup = com.pesaflow.app.ui.budgets.parseLiving(viewModel.getOnboardingAnswers())
-    val response = early ?: when {
+    val response = try { early ?: when {
         q.contains("hello") || q == "hi" || q.contains("hey") || q.contains("habari") || q.contains("sasa") || q.contains("mambo") ->
             run {
                 // Onboarding answers feed the greeting: your stated worry, if any.
@@ -801,7 +801,11 @@ fun processUserInput(
                 }
             if (hint != null) "$hint\n\n$base" else base
         }
+     } catch (_: Exception) {
+        BuddyHumor.error(BuddyMemory.snapshot().turnCount)
     }
+
+   }
 
     val scored = BuddyBrain.classify(q).firstOrNull()
     val intent = scored?.takeIf { it.conf >= 0.5f }?.name
