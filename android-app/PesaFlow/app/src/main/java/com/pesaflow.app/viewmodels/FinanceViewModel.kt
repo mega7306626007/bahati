@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.pesaflow.app.data.academic.budgetWindow
+import com.pesaflow.app.data.money.FinancialSnapshot
+import com.pesaflow.app.data.money.buildFinancialSnapshot
 import com.pesaflow.app.data.database.AppDatabase
 import com.pesaflow.app.data.models.*
 import com.pesaflow.app.data.parsers.NaturalLanguageParser
@@ -128,31 +130,36 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
     private fun prefs() = getApplication<Application>().getSharedPreferences("pesaflow_prefs", android.content.Context.MODE_PRIVATE)
 
 
-    // Computed metrics â€” every figure routes through MoneyMath, the single
-    // home for hero money math, so no screen can count the ledger its own way.
-    val availableBalance: StateFlow<Double> = allTransactions.map { txs ->
-        com.pesaflow.app.data.money.ledgerBalance(txs)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    // One ledger scan feeds the common financial metrics used across the app.
+    // Screens still subscribe to the existing metrics, but the expensive work
+    // is now shared instead of repeated once per StateFlow.
+    val financialSnapshot: StateFlow<FinancialSnapshot> = allTransactions
+        .map(::buildFinancialSnapshot)
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            buildFinancialSnapshot(emptyList())
+        )
 
+    val availableBalance: StateFlow<Double> = financialSnapshot
+        .map { it.balance }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-    val monthlyIncome: StateFlow<Double> = allTransactions.map { txs ->
-        com.pesaflow.app.data.money.monthScopedTotal(txs, TransactionType.INCOME)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    val monthlyIncome: StateFlow<Double> = financialSnapshot
+        .map { it.monthIncome }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
+    val monthlyExpenses: StateFlow<Double> = financialSnapshot
+        .map { it.monthExpense }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-    val monthlyExpenses: StateFlow<Double> = allTransactions.map { txs ->
-        com.pesaflow.app.data.money.monthScopedTotal(txs, TransactionType.EXPENSE)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    val totalSavings: StateFlow<Double> = financialSnapshot
+        .map { it.totalSavings }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-
-    val totalSavings: StateFlow<Double> = allTransactions.map { txs ->
-        txs.filter { it.type == TransactionType.SAVING && it.source !in com.pesaflow.app.data.money.NON_STAT_SOURCES }.sumOf { it.amount }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
-
-
-    val ziidiSaved: StateFlow<Double> = allTransactions.map { txs ->
-        com.pesaflow.app.data.money.ziidiHoldings(txs)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    val ziidiSaved: StateFlow<Double> = financialSnapshot
+        .map { it.ziidi }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
 
     // User-curated money-rhythm hypotheses confirmed on Home.
