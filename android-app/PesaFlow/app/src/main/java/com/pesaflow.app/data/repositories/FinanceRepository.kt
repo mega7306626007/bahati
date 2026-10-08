@@ -133,8 +133,30 @@ class FinanceRepository(private val database: AppDatabase) {
 
 
     suspend fun insertPendingTransactions(pending: List<PendingTransaction>) {
-        for (p in pending) {
-            insertPendingTransaction(p)
+        if (pending.isEmpty()) return
+
+        val codes = pending.asSequence()
+            .mapNotNull { it.sourceTransactionId?.takeIf(String::isNotBlank) }
+            .distinct()
+            .toList()
+
+        if (codes.isEmpty()) {
+            database.pendingTransactionDao().insertPendingTransactions(pending)
+            return
+        }
+
+        val existing = (
+            database.pendingTransactionDao().findExistingSourceCodes(codes) +
+                database.transactionDao().findExistingSourceCodes(codes)
+            ).filterNotNull().toHashSet()
+
+        val fresh = pending.filter { p ->
+            val code = p.sourceTransactionId
+            code.isNullOrBlank() || existing.add(code)
+        }
+
+        if (fresh.isNotEmpty()) {
+            database.pendingTransactionDao().insertPendingTransactions(fresh)
         }
     }
 
