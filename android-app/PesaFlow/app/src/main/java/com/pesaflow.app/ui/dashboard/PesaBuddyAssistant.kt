@@ -801,11 +801,9 @@ fun processUserInput(
                 }
             if (hint != null) "$hint\n\n$base" else base
         }
-     } catch (_: Exception) {
+    } catch (_: Exception) {
         BuddyHumor.error(BuddyMemory.snapshot().turnCount)
     }
-
-   }
 
     val scored = BuddyBrain.classify(q).firstOrNull()
     val intent = scored?.takeIf { it.conf >= 0.5f }?.name
