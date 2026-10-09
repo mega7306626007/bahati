@@ -7,6 +7,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,7 +65,7 @@ private val UNI_CHIPS = listOf("UoN", "KU", "JKUAT", "Maseno", "Egerton", "Other
 private const val DAY_MS = 24L * 60 * 60 * 1000
 
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
     // Mid-onboarding process death resumes where you left off, not at step 0.
@@ -1028,8 +1029,9 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Row(
+                    FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         listOf(30 to "1 month", 90 to "3 months", 150 to "5 months").forEach { (days, label) ->
@@ -1782,6 +1784,25 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             ) {
                                 viewModel.addBill("Semester fees", feesAmt, feesDueMillis, "School", "ONE_TIME")
                             }
+                            // Fare bridge: the approve-time commute matcher reads
+                            // school_fare_one_way + min_transport_fare (Semester
+                            // screen), but most users only ever type the
+                            // round-trip daily figure here. Seed one-way (half)
+                            // and a floor (half minus the ±50 rhythm tolerance)
+                            // ONLY when the Semester keys are still blank —
+                            // anything typed there wins. Without this, fares
+                            // sit uncategorized forever and budget envelopes
+                            // read zero.
+                            transportDaily.toDoubleOrNull()?.takeIf { it > 0 }?.let { roundTrip ->
+                                val farePrefs = appContext.getSharedPreferences("pesaflow_prefs", android.content.Context.MODE_PRIVATE)
+                                if (farePrefs.getString("school_fare_one_way", "").isNullOrBlank()) {
+                                    val oneWay = roundTrip / 2.0
+                                    val edit = farePrefs.edit().putString("school_fare_one_way", oneWay.toString())
+                                    val floor = (oneWay - 50.0).takeIf { it > 0 }
+                                    if (floor != null) edit.putString("min_transport_fare", floor.toString())
+                                    edit.apply()
+                                }
+                            }
                             // School run from step 0: class hours ride Mon–Fri into
                             // the timetable — commute days + peak verdict follow.
                             // Only money held now seeds opening equity. Expected
@@ -2061,6 +2082,7 @@ private fun OpeningRow(emoji: String, title: String, body: String) {    Row(modi
 // which direction it applies to — and typing the relation prefills the rest
 // (Mother → Upkeep + money-in). Saving teaches the triple memory: future rows
 // from them resolve and file themselves. Asked exactly once.
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SenderCardRow(card: SenderCard, onSaved: () -> Unit) {
     val ctx = LocalContext.current
@@ -2127,14 +2149,16 @@ private fun SenderCardRow(card: SenderCard, onSaved: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("Applies to:", style = MaterialTheme.typography.bodySmall)
-                listOf("OUT" to "Money out", "IN" to "Money in", "BOTH" to "Both").forEach { (s, text) ->
-                    FilterChip(selected = scope == s, onClick = { scope = s }, label = { Text(text) })
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    listOf("OUT" to "Money out", "IN" to "Money in", "BOTH" to "Both").forEach { (s, text) ->
+                        FilterChip(selected = scope == s, onClick = { scope = s }, label = { Text(text) })
+                    }
                 }
             }
             Button(onClick = {

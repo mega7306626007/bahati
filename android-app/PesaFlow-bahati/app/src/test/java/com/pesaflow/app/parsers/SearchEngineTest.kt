@@ -140,6 +140,20 @@ class SearchEngineTest {
     }
 
     @Test
+    fun `exact hits suppress fuzzy near misses`() {
+        // Regression: searching "trevor" must not drag in near-miss
+        // merchants (e.g. Ziidi rows) alongside the exact hits.
+        val engine = SearchEngine()
+        val rows = listOf(
+            tx("Trevor", "Food", 350.0),
+            tx("Trevos Lunch", "Food", 200.0),
+            tx("Transfer to Ziidi", "Transfer", 5000.0)
+        )
+        val result = engine.searchWithFuzzy(rows, "Trevor", maxResults = 500)
+        assertEquals(listOf("Trevor"), result.hits.map { it.transaction.merchant })
+    }
+
+    @Test
     fun `searchWithFuzzyReturnsMoreHitsWhenNeeded`() {
         val engine = SearchEngine()
         val exact = engine.search(allTxs, "NonExistent", maxResults = 50)

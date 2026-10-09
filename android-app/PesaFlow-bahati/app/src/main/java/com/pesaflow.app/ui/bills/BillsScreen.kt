@@ -54,6 +54,16 @@ fun BillsScreen(viewModel: FinanceViewModel) {
             bills.none { it.status != "PAID" && it.name.equals(hit.label, ignoreCase = true) }
         }.take(5)
     }
+    // Directory-first bill suggestions: known Kenyan billers (paybills, ISPs,
+    // utilities) matched against the ledger with evidence — never "any name
+    // you paid three times". Home/campus names feed rent matching.
+    val profile by viewModel.universityProfile.collectAsState()
+    val dirHits = remember(transactions, bills, profile) {
+        val homes = listOfNotNull(profile?.campus, profile?.universityName)
+        com.pesaflow.app.data.finance.suggestBillsFromDirectory(transactions, homes).filter { hit ->
+            bills.none { it.status != "PAID" && it.name.equals(hit.biller.displayName, ignoreCase = true) }
+        }.take(5)
+    }
 
     val upcoming = bills.filter { it.status != "PAID" }
     val recurring = bills.filter { it.frequency != "ONE_TIME" && it.status != "PAID" }
@@ -105,7 +115,56 @@ fun BillsScreen(viewModel: FinanceViewModel) {
                 title = "Never surprised",
                 subtitle = "Due · repeats · paid"
             )
-            // Detected repeats: same charge on a rhythm — one tap to track as a bill
+            // Biller matches: known Kenyan billers (paybill numbers, ISP and
+            // utility names, your home area for rent) found on a steady
+            // rhythm in your ledger — with the evidence shown, not averaged
+            // guesses. One tap tracks the biller as a bill, paybill included.
+            if (dirHits.isNotEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text("Biller matches 📡", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Known billers on a steady rhythm in your spending — evidence shown under each. Track one so it never surprises you.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        dirHits.forEach { hit ->
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(hit.biller.displayName, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+                                    Text(
+                                        "KSh ${hit.medianAmount.toInt()} · ~every ${hit.medianGapDays}d · ${hit.count}× seen · ${hit.evidence}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                val dirKey = "dir|${hit.biller.displayName}|${hit.medianAmount.toInt()}|${hit.medianGapDays}"
+                                TextButton(
+                                    onClick = {
+                                        viewModel.addBill(
+                                            hit.biller.displayName,
+                                            hit.medianAmount,
+                                            System.currentTimeMillis() + hit.medianGapDays * 24L * 60 * 60 * 1000,
+                                            hit.biller.category,
+                                            if (hit.monthly) "MONTHLY" else "WEEKLY",
+                                            hit.biller.paybills.firstOrNull() ?: ""
+                                        )
+                                        ack(dirKey)
+                                    },
+                                    enabled = dirKey !in acked
+                                ) { Text(if (dirKey in acked) "Tracked ✓" else "+ Bill", color = MaterialTheme.colorScheme.primary) }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+                    }
+                }
+            }
+            // Frequent spots: money-flow insight, not bills. Who you pay most,
+            // how often, how much — habits worth seeing, whether or not they
+            // ever become tracked bills. The + Bill button stays for spots
+            // that deserve never to surprise you.
             if (repeats.isNotEmpty()) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -113,9 +172,9 @@ fun BillsScreen(viewModel: FinanceViewModel) {
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
-                        Text("Detected Repeats 🔁", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Text("Frequent spots 👀", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Same charge, regular rhythm — track it so it never surprises you.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Who you pay most, how often, how much — your spending habits laid bare. Spots, not bills: turn one into a tracked bill only if it should never surprise you.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(8.dp))
                         repeats.take(5).forEach { r ->
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -221,13 +280,13 @@ fun BillsScreen(viewModel: FinanceViewModel) {
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
-                            "Looks recurring (${repeats.size})",
+                            "Frequent spots (${repeats.size})",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            "Same charge, steady rhythm — tap to track as a bill.",
+                            "Spending habits, not bills: who gets your money most, how often, how much. Tap to track one that should never surprise you.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

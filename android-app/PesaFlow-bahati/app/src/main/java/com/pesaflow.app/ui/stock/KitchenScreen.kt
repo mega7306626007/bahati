@@ -406,18 +406,7 @@ fun KitchenScreen(viewModel: FinanceViewModel) {
                                 }
                                 // Cupboard → planner loop: missing foods join the catalog
                                 // so future menus and shopping lists include them.
-                                if (myFoods.none { it.name.equals(item.name, ignoreCase = true) }) {
-                                    OutlinedButton(
-                                        onClick = {
-                                            viewModel.addMealItem(item.name, "Lunch", item.pricePerPack, "Complete", "Buy")
-                                        },
-                                        shape = RoundedCornerShape(12.dp)
-                                    ) { Text("Add to foods") }
-                                }
-                            }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                // Cupboard → planner loop: missing foods join the catalog
-                                // so future menus and shopping lists include them.
+                                // (Single copy — a duplicated twin used to render here.)
                                 if (myFoods.none { it.name.equals(item.name, ignoreCase = true) }) {
                                     OutlinedButton(
                                         onClick = {
@@ -428,12 +417,17 @@ fun KitchenScreen(viewModel: FinanceViewModel) {
                                 }
                             }
                             Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Shelf full without buying? Someone restocked you, or the count drifted — reset it here, no purchase logged.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 OutlinedButton(
                                     onClick = { viewModel.restockKitchen(item); ack("${item.id}:restock") },
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Text(if ("${item.id}:restock" in acked) "Shelf reset ✓" else "Set shelf to one pack (no purchase)")
+                                    Text(if ("${item.id}:restock" in acked) "Shelf reset ✓" else "Reset shelf")
                                 }
                                 Button(
                                     onClick = {

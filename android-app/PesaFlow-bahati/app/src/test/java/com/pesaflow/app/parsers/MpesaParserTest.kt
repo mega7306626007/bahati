@@ -222,6 +222,27 @@ class MpesaParserTest {
     }
 
     @Test
+    fun `fuliza fee marker needs both fuliza and fee words`() {
+        assertTrue(MpesaParser.isFulizaFeeText("fuliza daily maintenance fee ksh 25"))
+        assertTrue(MpesaParser.isFulizaFeeText("ksh 10 fuliza access fee charged"))
+        assertFalse(MpesaParser.isFulizaFeeText("transaction cost ksh 7"))
+        assertFalse(MpesaParser.isFulizaFeeText("fuliza disbursed ksh 1000"))
+        assertFalse(MpesaParser.isFulizaFeeText("repaid fuliza ksh 500"))
+    }
+
+    @Test
+    fun `fuliza maintenance fee types as charges not repayment or spend`() {
+        // KSh125: too big for the generic small-amount cost lane, so the
+        // dedicated Fuliza-charges typing applies (small fee-shaped debits
+        // keep "Transaction Cost" and still count via the fee-row clause).
+        val sms = "UJ3CC8Z3YZ Confirmed. You have sent KSh125.00 to FULIZA daily maintenance fee on 3/10/26 at 7:08 PM"
+        val tx = MpesaParser.parseMessage(sms)
+        assertNotNull(tx)
+        assertEquals(TransactionType.EXPENSE, tx!!.type)
+        assertEquals("Fuliza charges", tx.subcategory)
+    }
+
+    @Test
     fun `genuine ziidi product movement stays savings`() {
         val sms = "UJ3CC8Z3AA Confirmed. You have invested KSh5,000.00 in M-Pesa Ziidi MMF on 3/10/26 at 7:08 PM"
         val tx = MpesaParser.parseMessage(sms)
@@ -296,9 +317,12 @@ class MpesaParserTest {
         // Phrases lifted from genuine M-Pesa statements (not invented).
         assertEquals("Debt", MpesaParser.inferCategory("Customer Transfer Fuliza MPesa", TransactionType.EXPENSE, "Customer Transfer Fuliza MPesa to 0712 - JOHN"))
         assertEquals("HELB", MpesaParser.inferCategory("HELB STUDENTS DISBURSEMENT", TransactionType.INCOME))
-        assertEquals("Fundraising", MpesaParser.inferCategory("CHARITY MAINA", TransactionType.EXPENSE))
-        assertEquals("Fundraising", MpesaParser.inferCategory("WINNERS CHAPEL", TransactionType.EXPENSE))
-        assertEquals("Fundraising", MpesaParser.inferCategory("WINNERS CHAPEL", TransactionType.EXPENSE))
+        // Giving is deliberately unfiled: no Fundraising auto-category, so
+        // church/charity flows land in reviewable Other instead of a bucket
+        // most users never asked for.
+        assertEquals("Other", MpesaParser.inferCategory("CHARITY MAINA", TransactionType.EXPENSE))
+        assertEquals("Other", MpesaParser.inferCategory("WINNERS CHAPEL", TransactionType.EXPENSE))
+        assertEquals("Other", MpesaParser.inferCategory("NAIROBI WATER", TransactionType.EXPENSE))
         assertEquals("Health", MpesaParser.inferCategory("SHA", TransactionType.EXPENSE))
         assertEquals("Health", MpesaParser.inferCategory("CYRUS ALMASI MEDICAL FUND", TransactionType.EXPENSE))
         assertEquals("Transport", MpesaParser.inferCategory("SUPER METRO", TransactionType.EXPENSE))

@@ -123,6 +123,34 @@ fun DebtTrackingScreen(viewModel: FinanceViewModel) {
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
+                    // Fuliza transparency: the deni rows above already include
+                    // Fuliza borrowing, and the ledger breaks it down here —
+                    // borrowed vs repaid vs outstanding, charges observed vs
+                    // the 1% access estimate, plus your carrier fee bleed.
+                    val fuliza = remember(transactions) { com.pesaflow.app.data.finance.fulizaTotals(transactions) }
+                    val fulizaRows = debts.count {
+                        it.person.contains("Fuliza", ignoreCase = true)
+                    }
+                    if (fuliza.borrowCount > 0 || fulizaRows > 0) {
+                        Spacer(modifier = Modifier.height(PesaSpacing.xs))
+                        SkinAccentLine(SkinDebt.accent)
+                        Spacer(modifier = Modifier.height(PesaSpacing.xs))
+                        Text(
+                            "Includes Fuliza: borrowed KSh ${fuliza.borrowed.toInt()} · repaid KSh ${fuliza.repaid.toInt()} · outstanding KSh ${fuliza.outstanding.toInt()} ($fulizaRows deni rows).",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        val feeCtx = LocalContext.current
+                        val monthFees = remember { com.pesaflow.app.data.parsers.readMonthFees(feeCtx) }
+                        val lifeFees = remember(transactions) { com.pesaflow.app.data.finance.lifetimeFeeTotal(transactions) }
+                        val rate = com.pesaflow.app.data.finance.dailyRateFor(fuliza.outstanding)
+                        Text(
+                            "Fuliza charges observed KSh ${fuliza.chargesObserved.toInt()} · ~1% access ≈ KSh ${fuliza.accessEstimate.toInt()} (estimate) · running ~KSh ${rate.toInt()}/day at this balance. Carrier fees: KSh ${monthFees.toInt()} this month · KSh ${lifeFees.toInt()} lifetime.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 val toMeTotal = owedToMe.sumOf { it.amount }

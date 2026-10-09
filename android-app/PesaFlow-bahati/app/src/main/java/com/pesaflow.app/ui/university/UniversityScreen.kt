@@ -2,6 +2,8 @@ package com.pesaflow.app.ui.university
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
@@ -180,22 +182,33 @@ fun UniversityScreen(viewModel: FinanceViewModel) {
             text = {
                 Column(
                     modifier = Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("University") })
-                    OutlinedTextField(value = campus, onValueChange = { campus = it }, label = { Text("Campus") })
-                    OutlinedTextField(value = programme, onValueChange = { programme = it }, label = { Text("Programme or course (optional)") })
-                    OutlinedTextField(value = yearOfStudy, onValueChange = { yearOfStudy = it }, label = { Text("Year of study (optional)") })
-                    OutlinedTextField(value = semester, onValueChange = { semester = it }, label = { Text("Semester") })
-                    OutlinedTextField(value = year, onValueChange = { year = it }, label = { Text("Academic Year") })
-                    OutlinedTextField(value = fees, onValueChange = { fees = it }, label = { Text("Fees owed (KSh, optional)") })
-                    OutlinedTextField(value = helb, onValueChange = { helb = it }, label = { Text("HELB expected this semester — Sem ${semester.ifBlank { "1" }} (KSh, optional)") })
-                    TimestampPickerField("Semester start date", semesterStart) { semesterStart = it }
-                    TimestampPickerField("Semester end date", semesterEnd) { semesterEnd = it }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("University") }, modifier = Modifier.weight(1f))
+                        OutlinedTextField(value = campus, onValueChange = { campus = it }, label = { Text("Campus") }, modifier = Modifier.weight(1f))
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedTextField(value = programme, onValueChange = { programme = it }, label = { Text("Programme/course") }, modifier = Modifier.weight(1f))
+                        OutlinedTextField(value = yearOfStudy, onValueChange = { yearOfStudy = it }, label = { Text("Year of study") }, modifier = Modifier.weight(1f))
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedTextField(value = semester, onValueChange = { semester = it }, label = { Text("Semester") }, modifier = Modifier.weight(1f))
+                        OutlinedTextField(value = year, onValueChange = { year = it }, label = { Text("Academic Year") }, modifier = Modifier.weight(1f))
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedTextField(value = fees, onValueChange = { fees = it }, label = { Text("Fees owed (KSh)") }, modifier = Modifier.weight(1f))
+                        OutlinedTextField(value = helb, onValueChange = { helb = it }, label = { Text("HELB expected (KSh)") }, modifier = Modifier.weight(1f))
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        TimestampPickerField("Semester start", semesterStart) { semesterStart = it }
+                        TimestampPickerField("Semester end", semesterEnd) { semesterEnd = it }
+                    }
                     TimestampPickerField("Fees due date", feesDueDate) { feesDueDate = it }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf("HELB", "SELF", "BOTH").forEach { s ->
-                        FilterChip(selected = fundSource == s, onClick = { fundSource = s }, label = { Text(s) })
+                            FilterChip(selected = fundSource == s, onClick = { fundSource = s }, label = { Text(s) })
                         }
                     }
                     profileError?.let {
@@ -523,11 +536,22 @@ fun UniversityFinancialPlanner(
                 )
                 val helbExp = profile?.helbExpected ?: 0.0
                 if (helbExp > 0) {
+                    val semStart = profile?.semesterStartTimestamp ?: 0L
+                    val spentSinceStart = transactions.filter {
+                        it.type == com.pesaflow.app.data.models.TransactionType.EXPENSE && !it.isSample &&
+                            (semStart <= 0L || it.dateTimestamp >= semStart)
+                    }.sumOf { it.amount }
+                    val helbRemaining = helbExp - spentSinceStart
+                    UniversityInfoRow(
+                        label = "HELB remaining",
+                        value = "KSh " + helbRemaining.toInt() + " of KSh " + helbExp.toInt() + " (KSh " + spentSinceStart.toInt() + " spent)",
+                        color = if (helbRemaining >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                    )
                     val afterFees = helbExp - feesAmt
                     UniversityInfoRow(
                         label = "HELB after fees",
                         value = "KSh " + afterFees.toInt() + if (afterFees >= 0) " for upkeep" else " short — gap plan",
-                        color = if (afterFees >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        color = if (afterFees >= 0) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error
                     )
                 }
             }

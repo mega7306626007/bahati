@@ -58,6 +58,13 @@ fun categoryChartColor(category: String): Color {
         "airtime", "data", "internet" -> 4 // warning
         "savings", "investment" -> 1 // income green
         "salary", "income" -> 1
+        "bills" -> 6 // purple
+        "school", "books", "printing", "stationery" -> 7 // teal
+        "health", "personal care" -> 8 // pink
+        "debt" -> 9 // deep orange
+        "shopping", "clothing" -> 10 // cyan
+        "clothes" -> 11 // leaf green
+        "electricity" -> 5 // red reads as a bill due
         else -> null
     }
     val idx = fixed ?: ((key.hashCode() and Int.MAX_VALUE) % ChartPalette.size)

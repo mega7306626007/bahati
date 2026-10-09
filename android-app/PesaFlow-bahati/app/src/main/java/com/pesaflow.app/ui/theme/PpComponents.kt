@@ -462,7 +462,7 @@ fun SegChoice(
 private fun SegCell(opt: SegOption, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Card(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 56.dp),
+        modifier = modifier.heightIn(min = 52.dp),
         shape = RoundedCornerShape(16.dp),
         border = androidx.compose.foundation.BorderStroke(
             if (selected) 2.dp else 1.dp,
@@ -473,7 +473,7 @@ private fun SegCell(opt: SegOption, selected: Boolean, onClick: () -> Unit, modi
         )
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 4.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp, horizontal = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {

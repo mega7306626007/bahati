@@ -104,14 +104,18 @@ class SearchEngine {
         return previous[second.length] <= 1
     }
 
-    /** Search with fuzzy fallback on merchant names. */
+    /** Search with fuzzy fallback on merchant names. Fuzzy runs ONLY when
+     *  exact finds nothing: otherwise every query sweeps the whole ledger
+     *  for near-miss merchants and appends unrelated rows (e.g. a Ziidi row
+     *  next to a "trevor" hit). Typo rescue ("Nayivas" → Naivas) still works
+     *  because it only fires on zero exact hits. */
     fun searchWithFuzzy(
         allTxs: List<Transaction>,
         query: String,
         maxResults: Int = 50
     ): SearchResult {
         val exact = search(allTxs, query, maxResults = maxResults)
-        if (exact.hits.size >= maxResults) return exact
+        if (exact.hits.isNotEmpty()) return exact
         val terms = tokenize(query)
         val fuzzyHits = mutableListOf<SearchHit>()
         for (tx in allTxs) {

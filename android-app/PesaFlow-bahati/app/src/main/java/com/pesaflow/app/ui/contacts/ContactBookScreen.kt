@@ -29,6 +29,8 @@ const val TEST_CONTACT_DUMP_ENABLED = true
 @Composable
 fun ContactBookScreen(
     contacts: List<ContactEntry>,
+    seedMerchant: String = "",
+    onSeedConsumed: () -> Unit = {},
     reprocessStatus: String? = null,
     rescanActive: Boolean = false,
     onCancelRescan: () -> Unit = {},
@@ -42,6 +44,17 @@ fun ContactBookScreen(
     var search by remember { mutableStateOf("") }
     var editing by remember { mutableStateOf<ContactEntry?>(null) }
     var showAdd by remember { mutableStateOf(false) }
+    var seededName by remember { mutableStateOf("") }
+    // Deep link from spending footprint: capture the merchant locally, open
+    // the naming dialog prefilled, then consume the seed so plain visits
+    // stay plain. Local capture wins the race with the parent clearing it.
+    LaunchedEffect(seedMerchant) {
+        if (seedMerchant.isNotBlank()) {
+            seededName = seedMerchant
+            showAdd = true
+            onSeedConsumed()
+        }
+    }
 
     val filtered = remember(contacts, search) {
         if (search.isBlank()) contacts
@@ -182,11 +195,13 @@ fun ContactBookScreen(
 
     if (showAdd) {
         ContactEditDialog(
-            initial = null,
-            onDismiss = { showAdd = false },
+            initial = seededName.takeIf { it.isNotBlank() }
+                ?.let { com.pesaflow.app.data.ledger.ContactEntry(name = it, displayName = it) },
+            onDismiss = { showAdd = false; seededName = "" },
             onSave = { name, display, rel, cat, scope, notes, matchTerms ->
                 onSave(name, display, rel, cat, scope, notes, matchTerms)
                 showAdd = false
+                seededName = ""
             }
         )
     }

@@ -250,6 +250,18 @@ object MpesaParser {
             lowText.contains("paid back") || lowText.contains("recovered") ||
             lowText.contains("cleared")
 
+    // Fuliza charge texts (daily maintenance / access / service fees): money
+    // out that services NEITHER principal NOR new spending — it is the cost
+    // of the loan itself. Kept separate from "Fuliza repayment" so charge
+    // totals never inflate repaid principal. Always requires a fuliza marker
+    // alongside the fee words, so generic "transaction cost" tails (which
+    // have their own Transaction Cost lane) can never land here.
+    internal fun isFulizaFeeText(lowText: String): Boolean =
+        lowText.contains("fuliza") &&
+            (lowText.contains("maintenance") || lowText.contains("service fee") ||
+                lowText.contains("service charge") || lowText.contains("daily fee") ||
+                lowText.contains("access fee") || lowText.contains("fuliza fee"))
+
     fun isOfficialSender(sender: String): Boolean {
         val s = sender.lowercase().filter { it.isLetterOrDigit() }
         if (s.isBlank() || s.all { it.isDigit() }) return false
@@ -1596,6 +1608,11 @@ object MpesaParser {
                     isCost -> "Transaction Cost"
                     isFulizaText(raw.lowercase()) && type == TransactionType.INCOME -> "Borrowed funds"
                     isFulizaRepaymentText(raw.lowercase()) && type == TransactionType.EXPENSE -> "Fuliza repayment"
+                    // Fuliza charge texts (maintenance / access / service fees):
+                    // the cost of the loan itself — must not inflate repaid
+                    // principal ("Fuliza repayment") nor new borrowing
+                    // ("Borrowed spend"). Checked before the generic fallthrough.
+                    isFulizaFeeText(raw.lowercase()) && type == TransactionType.EXPENSE -> "Fuliza charges"
                     // Fuliza-funded spending (e.g. "Customer Transfer Fuliza
                     // M-Pesa"): new borrowing out, NOT a repayment — it must
                     // never reduce the outstanding deni like repayments do.
@@ -1702,12 +1719,10 @@ object MpesaParser {
         // HELB upkeep is a student's salary — visible as its own bucket, not
         // blended into Salary. Matches the helbReceived merchant rule.
         if (lower.contains("helb")) return "HELB"
-        // Giving: church/tithe/mosque/charity flows read as Fundraising, the
-        // same word the reference report uses.
-        if (lower.contains("charity") || lower.contains("donation") || lower.contains("tithe") ||
-            Regex("\\bchurch\\b").containsMatchIn(lower) || lower.contains("chapel") ||
-            lower.contains("offering") || lower.contains("mosque") || lower.contains("fundraising")
-        ) return "Fundraising"
+        // Giving (church/tithe/mosque/charity) is deliberately NOT
+        // auto-filed: most users have no giving envelope, and a wrong
+        // confident category is worse than an honest "Other" awaiting
+        // review. Contact memory still learns whatever you file it as.
         if (lower.contains("bill") || lower.contains("paybill")) return "Bills"
         if (lower.contains("transfer") || lower.contains("agent") || lower.contains("pochi") || lower.contains("kcb") || lower.contains("equity") || lower.contains("absa") || lower.contains("stanbic") || lower.contains("co-op") || lower.contains("coop") || lower.contains("family") || lower.contains("dtb") || lower.contains("ncba") || lower.contains("bank") || lower.contains("i&m") || lower.contains("sidian") || lower.contains("loop")) return "Transfers"
         if (type == TransactionType.INCOME) return "Salary"
@@ -1739,7 +1754,9 @@ object MpesaParser {
             // "house" alone doesn't mean rent (coffee houses, food houses) —
             // real rent texts say rent/hostel/apartment/nyumba.
             lower.contains("hostel") || lower.contains("rent") || lower.contains("apartment") -> "Rent"
-            lower.contains("water") || lower.contains("nairobi water") -> "Water"
+            // Water rides inside rent for most campus housing — auto-filing a
+            // separate Water envelope split water bills away from the rent
+            // they belong to. Falls through to human review instead.
             lower.contains("school") || lower.contains("fees") || lower.contains(" fee ") || lower.contains("university") || lower.contains("tuition") || lower.contains("exam") || lower.contains("strathmore") -> "School"
             lower.contains("reversal") || lower.contains("revers") -> "Other"
             lower.contains("salon") || lower.contains("barber") || lower.contains("hair") || lower.contains("nails") -> "Kujibamba"

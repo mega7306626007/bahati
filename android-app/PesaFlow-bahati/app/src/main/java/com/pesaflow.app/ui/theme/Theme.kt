@@ -46,14 +46,22 @@ val InfoBlue = Color(0xFF29B6F6)
 val MutedGray = Color(0xFF9E9E9E)
 val ChartPurple = Color(0xFFAB47BC)
 // Donut/chart slices draw from the token system — navy-compatible hues,
- // never neon. Gold appears once; income/expense read instantly.
+// never neon. Gold appears once; income/expense read instantly. Twelve
+// entries so common campus categories each hold their own color; indices
+// 0–5 are frozen (existing charts must not reshuffle), 6–11 extend.
 val ChartPalette = listOf(
-    ppColors.brightBlue,
-    ppColors.income,
-    ppColors.gold,
-    ppColors.info,
-    ppColors.warning,
-    ppColors.expense
+    ppColors.brightBlue, // 0 rent
+    ppColors.income, // 1 savings, investment, salary, income
+    ppColors.gold, // 2 food
+    ppColors.info, // 3 transport
+    ppColors.warning, // 4 airtime, data, internet
+    ppColors.expense, // 5 fallback red
+    Color(0xFFAB47BC), // 6 bills (purple)
+    Color(0xFF26A69A), // 7 school (teal)
+    Color(0xFFEC407A), // 8 health (pink)
+    Color(0xFFE65100), // 9 debt (deep orange)
+    Color(0xFF00ACC1), // 10 shopping (cyan)
+    Color(0xFF7CB342) // 11 clothes (leaf green)
 )
 val SoftCardSurface = Color(0xFF252525)
 

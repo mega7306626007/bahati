@@ -126,6 +126,6 @@ interface TransactionDao {
     suspend fun getByTransferGroup(groupId: String): List<Transaction>
 
 
-    @Query("SELECT * FROM transactions WHERE (amount >= :minAmount AND amount <= :maxAmount) OR (merchant LIKE '%' || :searchTerm || '%' OR category LIKE '%' || :searchTerm || '%')")
+    @Query("SELECT * FROM transactions WHERE (amount >= :minAmount AND amount <= :maxAmount) AND (merchant LIKE '%' || :searchTerm || '%' OR category LIKE '%' || :searchTerm || '%')")
     fun searchTransactions(minAmount: Double, maxAmount: Double, searchTerm: String): Flow<List<Transaction>>
 }

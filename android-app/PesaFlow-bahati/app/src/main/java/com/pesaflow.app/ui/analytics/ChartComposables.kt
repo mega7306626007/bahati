@@ -112,6 +112,32 @@ fun BudgetRing(fraction: Float, modifier: Modifier = Modifier) {
 }
 
 
+/**
+ * Daily spend series: per-day EXPENSE totals over the last [daysBack] days,
+ * oldest → newest, zeros included. Consecutive expenses used to plot at equal
+ * spacing no matter the gaps between them, so a rent from last month sat
+ * next to today's lunch and the newest point almost always "spiked".
+ * Time-uniform buckets fix both the spike and the weirdness. Pure.
+ */
+fun dailySpendSeries(
+    transactions: List<com.pesaflow.app.data.models.Transaction>,
+    daysBack: Int,
+    nowMs: Long = System.currentTimeMillis()
+): List<Double> {
+    if (daysBack <= 0) return emptyList()
+    val dayMs = 24L * 60 * 60 * 1000
+    val start = com.pesaflow.app.data.time.startOfDay(nowMs) - (daysBack - 1) * dayMs
+    val perDay = DoubleArray(daysBack)
+    for (tx in transactions) {
+        if (tx.type != com.pesaflow.app.data.models.TransactionType.EXPENSE || tx.isSample) continue
+        if (tx.dateTimestamp < start || tx.dateTimestamp > nowMs) continue
+        val idx = ((tx.dateTimestamp - start) / dayMs).toInt().coerceIn(0, daysBack - 1)
+        perDay[idx] += tx.amount
+    }
+    return perDay.toList()
+}
+
+
 @Composable
 fun HistoricalTrendLineChart(points: List<Double>, chartDescription: String? = null) {
     if (points.isEmpty()) return

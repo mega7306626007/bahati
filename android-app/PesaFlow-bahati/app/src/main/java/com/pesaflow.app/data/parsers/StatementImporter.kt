@@ -579,6 +579,7 @@ object StatementImporter {
                 // MPesa") are new borrowing out and must not.
                 MpesaParser.isFulizaText("$lowM $lowD") && type == TransactionType.INCOME -> "Borrowed funds"
                 MpesaParser.isFulizaRepaymentText("$lowM $lowD") && type == TransactionType.EXPENSE -> "Fuliza repayment"
+                MpesaParser.isFulizaFeeText("$lowM $lowD") && type == TransactionType.EXPENSE -> "Fuliza charges"
                 MpesaParser.isFulizaText("$lowM $lowD") && type == TransactionType.EXPENSE -> "Borrowed spend"
                 ziidi -> "Ziidi transfer"
                 else -> ""

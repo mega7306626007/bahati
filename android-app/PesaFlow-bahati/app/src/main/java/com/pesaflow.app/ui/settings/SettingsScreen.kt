@@ -19,6 +19,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -52,7 +53,7 @@ import com.pesaflow.app.ui.budgets.Persona
 import com.pesaflow.app.ui.budgets.parsePersona
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(viewModel: FinanceViewModel) {
     val context = LocalContext.current
@@ -711,13 +712,12 @@ fun SettingsScreen(viewModel: FinanceViewModel) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            listOf("Today", "Week", "Month").forEach { r ->
-                                FilterChip(selected = scanRange == r, onClick = { scanRange = r }, label = { Text(r) })
-                            }
-                        }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            listOf("5 months", "Custom", "All").forEach { r ->
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            listOf("Today", "Week", "Month", "5 months", "Custom", "All").forEach { r ->
                                 FilterChip(selected = scanRange == r, onClick = { scanRange = r }, label = { Text(r) })
                             }
                         }
@@ -922,6 +922,7 @@ fun SettingsScreen(viewModel: FinanceViewModel) {
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Data Management (${transactions.size} transactions)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        Text("Exports save to your Downloads folder via the system file picker.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -963,19 +964,13 @@ fun SettingsScreen(viewModel: FinanceViewModel) {
                             }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        // Statement report PDF: header totals, category bars,
-                        // full table with per-row fees + SIM, page footers.
-                        Row(
+                        Button(
+                            onClick = { showPdfRange = true },
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
                         ) {
-                            Button(
-                                onClick = { showPdfRange = true },
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
-                            ) {
-                                Text("Export PDF 📄", style = MaterialTheme.typography.bodySmall)
-                            }
+                            Text("Export PDF statement 📄", style = MaterialTheme.typography.bodySmall)
                         }
                         backupMsg?.let {
                             Spacer(modifier = Modifier.height(4.dp))

@@ -244,6 +244,14 @@ private fun PesaFlowAppNav(viewModel: FinanceViewModel) {
         selectedTab = 4
         moreSection = NavRoutes.BUDDY
     }
+    // Merchant prefill for Contact Book naming (e.g. from the spending
+    // footprint): consumed once on entry so stale seeds never reopen it.
+    var contactSeed by remember { mutableStateOf("") }
+    fun openContacts(seedMerchant: String = "") {
+        contactSeed = seedMerchant
+        selectedTab = 4
+        moreSection = NavRoutes.CONTACTS
+    }
     var showSpeedDial by remember { mutableStateOf(false) }
     var importResult by remember { mutableStateOf<String?>(null) }
     // The only manual entries left: cash, which no scan can see.
@@ -423,7 +431,7 @@ private fun PesaFlowAppNav(viewModel: FinanceViewModel) {
                     onOpenSearch = { selectedTab = 4; moreSection = NavRoutes.SEARCH },
                     onAskBuddy = { openBuddy(NavRoutes.TRANSACTIONS) }
                 )
-                3 -> InsightsScreen(viewModel = viewModel)
+                3 -> InsightsScreen(viewModel = viewModel, onNameMerchant = { openContacts(it) })
                 else -> when (moreSection) {
                     NavRoutes.SETTINGS -> SettingsScreen(viewModel = viewModel)
                     NavRoutes.DEBT -> DebtTrackingScreen(viewModel = viewModel)
@@ -473,7 +481,7 @@ private fun PesaFlowAppNav(viewModel: FinanceViewModel) {
                     NavRoutes.NETWORTH -> NetWorthScreen(viewModel = viewModel)
                     NavRoutes.SAVINGS -> SavingsScreen(viewModel = viewModel)
                     NavRoutes.REPORTS -> ReportsScreen(viewModel = viewModel)
-                    NavRoutes.INSIGHTS -> InsightsScreen(viewModel = viewModel)
+                    NavRoutes.INSIGHTS -> InsightsScreen(viewModel = viewModel, onNameMerchant = { openContacts(it) })
                     NavRoutes.THINGS -> BelongingsScreen(viewModel = viewModel)
                     NavRoutes.KITCHEN -> KitchenScreen(viewModel = viewModel)
                     NavRoutes.REVIEW -> ReviewScreen(viewModel = viewModel)
@@ -509,6 +517,8 @@ private fun PesaFlowAppNav(viewModel: FinanceViewModel) {
                         val contactRescanActive by viewModel.contactRescanActive.collectAsState()
                         ContactBookScreen(
                             contacts = contacts,
+                            seedMerchant = contactSeed,
+                            onSeedConsumed = { contactSeed = "" },
                             reprocessStatus = contactRuleScanStatus,
                             rescanActive = contactRescanActive,
                             onCancelRescan = { viewModel.cancelContactRescan() },

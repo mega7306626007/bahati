@@ -775,7 +775,7 @@ fun MealPlannerScreen(viewModel: FinanceViewModel) {
                         modifier = Modifier.fillMaxWidth()
                     )
                     if (scannedFood != null && monthlyFoodInput != scannedFood.toString()) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         OutlinedButton(
                             onClick = { monthlyFoodInput = scannedFood.toString() },
                             shape = RoundedCornerShape(16.dp),
@@ -783,7 +783,7 @@ fun MealPlannerScreen(viewModel: FinanceViewModel) {
                         ) { Text("Use my M-Pesa figure: KSh " + scannedFood + " (about KSh " + (scannedFood / 30) + "/day)") }
                     }
                     if (foodAvg90 > 0 && monthlyFoodInput.toDoubleOrNull()?.toInt() != foodAvg90.toInt()) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         OutlinedButton(
                             onClick = { monthlyFoodInput = foodAvg90.toInt().toString() },
                             shape = RoundedCornerShape(16.dp),
@@ -791,7 +791,7 @@ fun MealPlannerScreen(viewModel: FinanceViewModel) {
                         ) { Text("Use your recorded 90-day Food average: KSh ${foodAvg90.toInt()}/month") }
                     }
                     if (foodBudget == null) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         OutlinedButton(
                             onClick = {
                                 viewModel.addBudget("Food", monthlyFood, BudgetType.MONTHLY)
@@ -1515,7 +1515,14 @@ fun MealPlannerScreen(viewModel: FinanceViewModel) {
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Generate builds from the settings above · Shuffle re-rolls them · Fix over-budget repairs only the days over the cap.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
                             onClick = { generateMenu() },
                             enabled = monthlyFood > 0,
@@ -1524,7 +1531,7 @@ fun MealPlannerScreen(viewModel: FinanceViewModel) {
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) { Text("Generate", color = MaterialTheme.colorScheme.onPrimary) }
                         TextButton(onClick = { seed = (1..1000).random(); generateMenu() }, enabled = mealItems.isNotEmpty() && monthlyFood > 0) { Text("Shuffle") }
-                        TextButton(onClick = { fixOverDays() }, enabled = menu.any { it.overBudget }) { Text("Fix over") }
+                        TextButton(onClick = { fixOverDays() }, enabled = menu.any { it.overBudget }) { Text("Fix over-budget") }
                         OutlinedButton(onClick = { shareMenu() }, enabled = menu.isNotEmpty(), shape = RoundedCornerShape(16.dp)) { Text("Share") }
                         OutlinedButton(
                             onClick = { pdfSaver.launch("pesaflow-${selectedPeriod.lowercase()}-menu.pdf") },

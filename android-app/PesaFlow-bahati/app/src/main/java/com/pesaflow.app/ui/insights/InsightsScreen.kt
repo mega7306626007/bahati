@@ -29,9 +29,9 @@ import com.pesaflow.app.ui.theme.TintInsightsGraph
 import com.pesaflow.app.viewmodels.FinanceViewModel
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun InsightsScreen(viewModel: FinanceViewModel) {
+fun InsightsScreen(viewModel: FinanceViewModel, onNameMerchant: (String) -> Unit = {}) {
     val transactions by viewModel.allTransactions.collectAsState()
     val budgets by viewModel.budgets.collectAsState()
     val currentLanguage by viewModel.currentLanguage.collectAsState()
@@ -43,6 +43,7 @@ fun InsightsScreen(viewModel: FinanceViewModel) {
     val nlpInputText by viewModel.nlpInputText.collectAsState()
     val extractedNlp by viewModel.extractedNlpTransaction.collectAsState()
     var chartFilter by remember { mutableStateOf<String?>(null) }
+    var velocityDays by remember { mutableStateOf(14) }
 
 
     Box(Modifier.fillMaxSize()) {
@@ -152,6 +153,47 @@ fun InsightsScreen(viewModel: FinanceViewModel) {
                                 selectedCategory = chartFilter,
                                 onSelectCategory = { chartFilter = if (chartFilter == it) null else it }
                             )
+                            // Contact cards for categorization: who is behind
+                            // the selected slice (else the biggest one), with
+                            // totals and counts. Naming one teaches the
+                            // engine — future rows file themselves.
+                            val focusCat = chartFilter
+                                ?: distribution.maxByOrNull { it.value }?.key
+                            if (focusCat != null) {
+                                val leaders = remember(transactions, focusCat) {
+                                    transactions.filter {
+                                        it.type == TransactionType.EXPENSE && !it.isSample &&
+                                            it.category.equals(focusCat, ignoreCase = true)
+                                    }.groupBy { it.merchant.trim().ifBlank { "Unknown" } }
+                                        .mapValues { (_, rows) -> rows.sumOf { it.amount } to rows.size }
+                                        .toList().sortedByDescending { it.second.first }.take(3)
+                                }
+                                if (leaders.isNotEmpty()) {
+                                    Text(
+                                        "Top in $focusCat — name one and future rows file themselves:",
+                                        style = com.pesaflow.app.ui.theme.ppTypography.bodySmall,
+                                        color = com.pesaflow.app.ui.theme.ppColors.textTertiary
+                                    )
+                                    leaders.forEach { (merchant, totalCount) ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                "$merchant · KSh ${totalCount.first.toInt()} · ${totalCount.second}×",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier.weight(1f),
+                                                maxLines = 1
+                                            )
+                                            TextButton(onClick = { onNameMerchant(merchant) }) {
+                                                Text("Name", color = MaterialTheme.colorScheme.primary)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         } else {
                             Text("Add transactions to generate interactive graphs.", style = com.pesaflow.app.ui.theme.ppTypography.bodySmall, color = com.pesaflow.app.ui.theme.ppColors.textTertiary, modifier = Modifier.padding(vertical = 8.dp))
                         }
@@ -163,21 +205,71 @@ fun InsightsScreen(viewModel: FinanceViewModel) {
                     Column(verticalArrangement = Arrangement.spacedBy(com.pesaflow.app.ui.theme.ppSpacing.sm)) {
                         com.pesaflow.app.ui.theme.PpSectionHeader(
                             title = "Velocity trend",
-                            subtitle = "Your last 10 expenses, oldest → newest"
+                            subtitle = "Daily spend, oldest → newest (equal days, no fake spikes)"
                         )
-                        val linePoints = remember(transactions) { transactions.filter { it.type == com.pesaflow.app.data.models.TransactionType.EXPENSE && !it.isSample }.take(10).map { it.amount }.reversed() }
-                        if (linePoints.isNotEmpty()) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(7, 14, 30).forEach { d ->
+                                FilterChip(
+                                    selected = velocityDays == d,
+                                    onClick = { velocityDays = d },
+                                    label = { Text("$d days") }
+                                )
+                            }
+                        }
+                        val linePoints = remember(transactions, velocityDays) {
+                            com.pesaflow.app.ui.analytics.dailySpendSeries(transactions, velocityDays)
+                        }
+                        if (linePoints.sum() > 0) {
                             HistoricalTrendLineChart(
                                 points = linePoints,
-                                chartDescription = "Spending trend, last 10 expenses, oldest to newest. Latest KSh ${linePoints.last().toInt()}."
+                                chartDescription = "Daily spending, last $velocityDays days, oldest to newest. Total KSh ${linePoints.sum().toInt()}."
                             )
                         } else {
-                            Text("No spending yet — log an expense and the trend draws itself.", style = com.pesaflow.app.ui.theme.ppTypography.bodySmall, color = com.pesaflow.app.ui.theme.ppColors.textTertiary)
+                            Text("No spending in the last $velocityDays days — log an expense and the trend draws itself.", style = com.pesaflow.app.ui.theme.ppTypography.bodySmall, color = com.pesaflow.app.ui.theme.ppColors.textTertiary)
                         }
                     }
                 }
             }
 
+            item {
+                com.pesaflow.app.ui.theme.PpCard(kind = com.pesaflow.app.ui.theme.PpCardKind.LARGE) {
+                    Column(verticalArrangement = Arrangement.spacedBy(com.pesaflow.app.ui.theme.ppSpacing.sm)) {
+                        com.pesaflow.app.ui.theme.PpSectionHeader(
+                            title = "Spend by SIM",
+                            subtitle = "Which line is burning the money"
+                        )
+                        val simSpend = remember(transactions) {
+                            transactions.filter { it.type == TransactionType.EXPENSE && !it.isSample && it.simSlot >= 0 }
+                                .groupBy { it.simSlot }
+                                .mapValues { (_, rows) -> rows.sumOf { it.amount } to rows.size }
+                        }
+                        if (simSpend.isEmpty()) {
+                            Text("No dual-SIM transactions yet — approve M-Pesa rows to see per-line spend.", style = com.pesaflow.app.ui.theme.ppTypography.bodySmall, color = com.pesaflow.app.ui.theme.ppColors.textTertiary)
+                        } else {
+                            val totalSim = simSpend.values.sumOf { it.first }
+                            simSpend.toSortedMap().forEach { (slot, pair) ->
+                                val spent = pair.first
+                                val count = pair.second
+                                val pct = if (totalSim > 0) (spent / totalSim * 100).toInt() else 0
+                                Column {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("SIM ${slot + 1}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                                        Text("KSh ${spent.toInt()} · $count txns · $pct%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    LinearProgressIndicator(
+                                        progress = { if (totalSim > 0) (spent / totalSim).toFloat() else 0f },
+                                        modifier = Modifier.fillMaxWidth().height(6.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             // Smart Insights Engine Section (talks from real data)
             item {

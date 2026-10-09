@@ -322,6 +322,7 @@ fun CampusLensRow(
 
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 fun ReportAlertsCard(lang: AppLanguage, onSent: (String) -> Unit) {
     val context = LocalContext.current
     var pendingPreview by remember { mutableStateOf<String?>(null) }
@@ -389,12 +390,12 @@ fun ReportAlertsCard(lang: AppLanguage, onSent: (String) -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 16.dp, vertical = 4.dp)
             .glass(shape = RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(alertsTitle(lang) + " 🔔", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             Text(
                 Copy4(
@@ -406,8 +407,7 @@ fun ReportAlertsCard(lang: AppLanguage, onSent: (String) -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { fire("night") }) {
                     Text(Copy4("Night now", "Usiku sai", "Night sai", "Night now").pick(lang))
                 }
