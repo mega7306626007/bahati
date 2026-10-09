@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- SMS permissions only: M-Pesa SMS parsing. Extra permissions
+         (notifications, storage, internet) return only with handling code. -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="PesaPlanner Bahati"
+        android:name=".PesaFlowApplication"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.PesaFlow">
+
+        <!-- Last-resort crash screen: plain views, never Compose/Room -->
+        <activity
+            android:name=".CrashReportActivity"
+            android:exported="false"
+            android:label="PesaPlanner Bahati" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="PesaPlanner Bahati"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.PesaFlow.Starting">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Share-to-App fallback pipeline -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
+        <!-- Home-screen widget: safe balance at a glance -->
+        <receiver
+            android:name=".ui.widget.PesaWidgetReceiver"
+            android:exported="false"
+            android:label="PesaPlanner">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/pesa_widget_info" />
+        </receiver>
+
+        <!-- M-Pesa SMS receiver: class exists at com.pesaflow.app.data.parsers.SmsReceiver -->
+        <receiver
+            android:name=".data.parsers.SmsReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Lunch-picker tap actions: logs the chosen plate, app-internal only -->
+        <receiver
+            android:name=".data.notifications.MealLogReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.pesaflow.app.LOG_MEAL" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Pending approve/ignore actions tapped straight from notifications -->
+        <receiver
+            android:name=".data.notifications.PendingApproveReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.pesaflow.app.APPROVE_PENDING" />
+                <action android:name="com.pesaflow.app.REJECT_PENDING" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Notification-based transaction detection (opt-in, off by default) -->
+        <service
+            android:name=".data.notifications.MpesaNotificationListener"
+            android:exported="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>

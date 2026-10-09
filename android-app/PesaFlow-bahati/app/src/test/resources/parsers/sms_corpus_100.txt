@@ -1,0 +1,108 @@
+# 100-message multi-provider SMS corpus. Format: SENDER|BODY|EXPECTED|NOTES
+# EXPECTED: INCOME, EXPENSE, TRANSFER, SAVING, or NULL (must not parse).
+# Gate: >=96% correct-type recall AND zero NULL false-positives.
+MPESA|QW12AB34CD Confirmed. You have sent KSh1,250.00 to John Doe on 12/9/26 at 10:30 AM|EXPENSE|p2p sent
+MPESA|QW12AB34CE Confirmed. You have received KSh2,000.00 from Mary Jane on 12/9/26 at 11:00 AM|INCOME|p2p received
+MPESA|QW12AB34CF Confirmed. KSh500.00 paid to Naivas Supermarket. on 12/9/26 at 9:15 AM|EXPENSE|merchant paid
+MPESA|QW12AB34CG Confirmed. KSh1,500.00 sent to KPLC PREPAID for account 1425801 on 12/9/26 at 8:00 AM|EXPENSE|paybill with account
+MPESA|QW12AB34CH Confirmed. Withdraw KSh5,000.00 from 123456 - EQUITY AGENT. on 12/9/26 at 2:00 PM|TRANSFER|agent withdrawal
+MPESA|DP12AB34CD Confirmed. on 12/9/26 at 9:00 AM deposited KSh10,000.00 to 123456 - JOHN AGENT on 12/9/26 at 9:05 AM|INCOME|agent deposit
+MPESA|QW12AB34CI Confirmed. KSh450.00 paid to Till 567890 - MAMA MBOGA on 12/9/26 at 1:00 PM|EXPENSE|till with number
+MPESA|QW12AB34CJ Confirmed. You have sent KSh50.00 worth of airtime to 0722000111 on 12/9/26 at 7:00 AM|EXPENSE|gifted airtime
+MPESA|QW12AB34CK Confirmed. You bought KSh100.00 of Airtime on 12/9/26 at 7:05 AM|EXPENSE|airtime self
+MPESA|QW12AB34CL Confirmed. You purchased 2GB weekly bundles for KSh250.00 on 12/9/26 at 7:06 AM|EXPENSE|bundle purchase
+MPESA|MS12AB34CD Confirmed. KSh2,000.00 transferred from M-PESA to M-Shwari on 12/9/26 at 10:00 AM|SAVING|mshwari lock
+MPESA|MS12AB34CE Confirmed. KSh1,500.00 transferred from M-Shwari to M-PESA on 12/9/26 at 10:05 AM|TRANSFER|mshwari unlock
+MPESA|BK12AB34CD Confirmed. KSh20,000.00 transferred from EQUITY to M-PESA on 12/9/26 at 9:00 AM|INCOME|bank to wallet
+MPESA|BK12AB34CE Confirmed. KSh5,000.00 transferred from M-PESA to KCB on 12/9/26 at 9:05 AM|SAVING|wallet to bank
+MPESA|FL12AB34CD Confirmed. You have borrowed KSh500.00 on Fuliza. Repay within 30 days. on 12/9/26 at 8:00 AM|INCOME|fuliza borrowed
+MPESA|RV12AB34CD Transaction reversal: KSh500.00 reversed to your M-PESA on 12/9/26 at 5:00 PM|TRANSFER|reversal bare
+MPESA|QW12AB34CM Confirmed. KSh2,000.00 sent to ECITIZEN for account 222333 on 12/9/26 at 11:00 AM|EXPENSE|ecitizen paybill
+MPESA|QW12AB34CN Confirmed. You have sent KSh1,000.00 to CHAMA GROUP on 12/9/26 at 6:00 PM|EXPENSE|chama send
+MPESA|QW12AB34CO Confirmed. You have sent KSh50.00 to 0722000222 on 12/9/26 at 6:05 PM|EXPENSE|phone-only party
+MPESA|QW12AB34CP Confirmed. KSh3,200.00 sent to NAIROBI WATER on 12/9/26 at 6:10 PM|EXPENSE|paybill no account
+MPESA|Your salary of KSh45,000.00 has been paid for September on 30/9/26|INCOME|salary credit
+MPESA|HELB upkeep of KSh20,000.00 disbursed to your account on 12/9/26|INCOME|helb upkeep
+MPESA|Your standing order of KSh3,000.00 to ZUKU has been executed on 12/9/26|EXPENSE|standing order
+MPESA|Your cheque of KES 25,000.00 has been cleared. Funds available on 12/9/26|INCOME|cheque cleared
+MPESA|ATM withdrawal of KES 10,000.00 at KENYATTA AVE on 12/9/26. New balance KES 5,000.00|TRANSFER|atm cash out
+MPESA|POS purchase of KES 2,500.00 at NAIVAS WESTGATE on 12/9/26|EXPENSE|pos purchase
+MPESA|Your Tala loan of KSh5,000.00 has been disbursed. Repay in 30 days.|INCOME|tala disbursed
+MPESA|Your Tala application is approved! You qualify for up to KSh10,000.00. Apply now to get cash.|NULL|loan offer not money
+MPESA|Dear customer your loan repayment of KSh1,500.00 was successful. Thank you.|EXPENSE|loan repayment
+MPESA|Your loan balance is KSh4,500.00. Keep repaying to grow your limit.|NULL|loan balance statement
+MPESA|Fuliza: KSh1,000.00 repaid successfully. Your outstanding balance is KSh200.00.|EXPENSE|fuliza repaid
+MPESA|Your Fuliza outstanding balance is KSh1,200.00. Repay via M-PESA to restore your limit.|NULL|fuliza statement
+MPESA|You are eligible for Fuliza up to KSh3,000.00. Dial *234# to opt in.|NULL|fuliza limit offer
+MPESA|Cashback of KSh150.00 earned on your Lipa na M-PESA payments this week.|INCOME|cashback reward
+MPESA|Interest of KSh45.00 earned on your M-Shwari savings for August.|INCOME|savings interest
+MPESA|SC12AB34CD Confirmed. KSh2,000.00 deposited to STIMA SACCO on 12/9/26 at 10:00 AM|SAVING|sacco deposit
+SAFARICOM|Okoa Jahazi: KSh100.00 airtime advanced. Repay with your next top-up.|EXPENSE|okoa advance
+SAFARICOM|Your Okoa Jahazi balance is KSh0.00. Top up to borrow again.|NULL|okoa zero balance
+|Your OTP is 456789 for KES 5,000.00. Do not share with anyone.|NULL|otp never parses
+KCB|Your OTP is 889900. Use it to complete your transaction. Do not share.|NULL|bank otp never parses
+MPESA|Your Zuku invoice of KSh2,500.00 is due Friday. Pay via M-PESA PayBill 503503.|NULL|invoice due not paid
+MPESA|QW12AB34CR Confirmed. Transaction of KSh500.00 to John Doe failed. Insufficient funds.|NULL|failed transaction
+MPESA|You have insufficient funds for KSh1,000.00. Top up and try again.|NULL|insufficient balance
+MPESA|Your request has been cancelled. No money was moved.|NULL|cancelled request
+MPESA|Your request timed out. Please try again later.|NULL|timed out
+MPESA|Wrong M-PESA PIN entered. Try again or dial *234#.|NULL|wrong pin
+MPESA|Your M-PESA balance is KSh3,900.00 as at 12/9/26 10:00 AM.|NULL|balance inquiry
+MPESA|Pata 5GB FREE when you recharge with KSh100.00 this weekend! T and Cs apply.|NULL|promo recharge
+MPESA|You earned 25 Bonga points this week. Redeem on *126#.|NULL|bonga points
+MPESA|M-PESA statement Aug: total sent KSh20,000.00, total received KSh15,000.00.|NULL|statement totals
+MPESA|Congratulations! You have won KSh1,000,000.00. Send KSh100.00 to 0722000333 to claim.|NULL|scam win claim
+MPESA|Payment of KES 2,000.00 confirmed. Thank you for shopping with us.|EXPENSE|amount then confirmed
+MPESA|Your salary advance of KSh2,000.00 has been credited to your account.|INCOME|salary advance
+MPESA|SB12AB34CD Confirmed. You have sent KES 300.00 to JOHN DOE on 12/9/26 at 10:00 AM|EXPENSE|kes core sent
+MPESA|SB12AB34CE Confirmed. You have received KES 4,000.00 from JANE DOE on 12/9/26 at 11:00 AM|INCOME|kes core received
+MPESA|SB12AB34CF Confirmed. KES 750.00 paid to NAIVAS SUPERMARKET. on 12/9/26 at 9:15 AM|EXPENSE|kes merchant paid
+MPESA|SB12AB34CG Imethibitishwa. Umetuma Ksh500.00 kwa JUMA JUMA tarehe 12/9/26 saa 10:30 AM|EXPENSE|swahili sent
+MPESA|SB12AB34CH Imethibitishwa. Umepokea Ksh1,200.00 kutoka kwa MARY JUMA tarehe 12/9/26 saa 11:00 AM|INCOME|swahili received
+AIRTELMONEY|Kshs 300.00 sent to 0733000444. Txn ID AM998877. New balance Kshs 700.00.|EXPENSE|kshs spelling
+AIRTELMONEY|You have paid KSh1,000.00 to DSTV for account 112233 on 12/9/26.|EXPENSE|airtel paid no header
+SAFARICOM|You have purchased 1GB Freedom bundle for KSh99.00. Valid 24hrs.|EXPENSE|bundle amount last
+|STIMA SACCO: Deposit of KES 3,000.00 confirmed. New balance KES 45,000.00.|SAVING|sacco bare kes
+MPESA|Confirmed booking ref BK778899. Pay KSh2,000.00 on arrival at the hotel.|NULL|future booking dotted
+AIRTELMONEY|You have received KSh20.00 airtime from 0722000555 on 12/9/26.|INCOME|airtime gift received
+AIRTELMONEY|You have sent KSh1,800.00 to JOHN DOE 0733111222. Txn ID AM12345678. Charges KSh22.00.|EXPENSE|airtel sent
+AIRTELMONEY|You have received Ksh2,500.00 from JANE DOE. Txn ID AM87654321.|INCOME|airtel received
+AIRTELMONEY|You have purchased KSh50.00 airtime for 0733111222. Txn ID AM112233.|EXPENSE|airtel airtime
+AIRTELMONEY|Transaction failed due to insufficient funds. Your balance is Ksh100.00.|NULL|airtel failed
+AIRTELMONEY|Your Airtel Money balance is Ksh1,250.00 as at 12/9/26.|NULL|airtel balance
+TELKOM|You have successfully sent Ksh700.00 to 0770111222. T-ID TK556677.|EXPENSE|tkash sent
+TELKOM|You have received Ksh1,200.00 from 0770333444. New T-Kash balance Ksh2,000.00.|INCOME|tkash received
+TELKOM|Sorry, your transaction failed. Please try again later.|NULL|tkash failed
+TELKOM|Your T-Kash balance is Ksh350.00.|NULL|tkash balance
+KCB|KCB: Your account 1234567890 has been credited with KES 50,000.00 on 12/9/26.|INCOME|kcb credit
+EQUITY|Equity: Your account has been debited with KES 3,000.00 at ATM KIMATHI on 12/9/26.|EXPENSE|equity debit
+CO-OP|Co-op Bank: KES 7,500.00 withdrawn via agent 45678 on 12/9/26.|EXPENSE|coop withdrawn
+ABSA|KES 5,000.00 deposited to your account on 12/9/26. Thank you.|INCOME|absa bare credit
+STANBIC|KES 450.00 charged as ledger fees on 12/9/26.|EXPENSE|stanbic bare charge
+NCBA|Your NCBA account balance is KES 12,000.00 as at 12/9/26.|NULL|ncba balance only
+FAMILY|KES 8,000.00 paid in to your Family account on 12/9/26.|INCOME|family paid in
+DTB|DTB: KES 8,000.00 paid out to 0722000666 on 12/9/26.|EXPENSE|dtb paid out
+I&M|I AND M: KES 350.00 deducted as SMS alerts fee on 12/9/26.|EXPENSE|im sender deducted
+SAFARICOM|QW12AB34CS Confirmed. You bought KSh100.00 of Airtime on 12/9/26 at 7:00 AM|EXPENSE|safaricom airtime classic
+SAFARICOM|Your data balance is 500MBs. Expiry 20/9/26.|NULL|data balance only
+SAFARICOM|Your M-PESA PIN has been changed successfully. If this was not you call 100.|NULL|pin changed
+|Hello, how are you today?|NULL|plain text
+||NULL|empty body
+|KSh without confirmation|NULL|amount word no digits
+|Your M-PESA PIN is 1234. Keep it secret and do not share.|NULL|pin digits only
+|I sent five hundred bob to Kamau yesterday.|NULL|word amounts accepted miss
+|Please call me back when you see this.|NULL|callback flash
+|Sent from my iPhone|NULL|device signature
+|Your parcel arrives today. Pay KSh350.00 on delivery.|NULL|cod parcel future
+|Confirmed reservation KE990011 pay KSh3500 on arrival at Sarova|NULL|booking no dots
+|Your loan is now overdue. Pay KSh2,000.00 now to avoid listing.|NULL|overdue reminder
+|Reminder: chama contribution of KSh500.00 is due Sunday.|NULL|chama reminder
+|You are pre-approved for a quick loan of KSh8,000.00. Dial *456#.|NULL|preapproved offer
+|Your airtime balance is KSh23.50.|NULL|airtime balance only
+|STOP to opt out of promo messages.|NULL|opt out
+|Rollover: your 2GB unused data expires tonight.|NULL|rollover notice
+SAFARICOM|Get unbeatable offers! Saksaka 20GB for KSh499 only. Dial *544# today.|NULL|safaricom unbeatable promo
+SAFARICOM|Special offer just for you: FREE 1GB when you buy 5GB. Offer valid till Sunday.|NULL|safaricom special offer
+SAFARICOM|Enjoy amazing discounts on Tunukiwa devices this weekend. Visit a Safaricom shop.|NULL|safaricom discount promo
+SAFARICOM|Pata 50% extra data on all weekly bundles. Promotion ends soon. STOP to opt out.|NULL|safaricom promotion extra
+SAFARICOM|You have received 100MB free data valid 24hrs. Thank you for staying with us.|NULL|free data reward no amount
