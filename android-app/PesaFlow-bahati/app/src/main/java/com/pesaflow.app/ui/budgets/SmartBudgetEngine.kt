@@ -231,7 +231,8 @@ fun smartBudget(
     // Declared envelopes (matatu preset, onboarding, manual): a stated number
     // is a promise — the plan never suggests below it on monthly periods.
     declaredByCategory: Map<String, Int> = emptyMap(),
-    periodBudgetCap: Double? = null
+    periodBudgetCap: Double? = null,
+    lang: com.pesaflow.app.data.models.AppLanguage = com.pesaflow.app.data.models.AppLanguage.ENGLISH
 ): SmartBudgetResult {
     val scale = periodScale(period)
     val periodName = periodNameOf(period)
@@ -319,20 +320,22 @@ fun smartBudget(
         } else {
             val pct = if (planBase > 0) ((neat / planBase) * 100).toInt() else 0
             val homeFed = persona == Persona.PARENTS_FAR || persona == Persona.PARENTS_NEAR
+            fun T(key: String, a: String = "", b: String = ""): String =
+                com.pesaflow.app.ui.language.budT(key, lang, a, b)
             val reason = when {
-                billFloor > 0 && neat <= billFloor -> "Covers your open ${t.category.lowercase()} bill"
-                declaredFloor > 0 && neat <= declaredFloor -> "Kept at your set ${t.category.lowercase()} budget"
-                t.category == "Food" && homeFed -> "Home-fed — small plate money, fares eat first"
-                t.category == "Food" && persona == Persona.HOSTEL_NOCOOK -> "Every meal bought — protect it fully"
-                t.category == "Food" -> if (tightMode) "Protected first — eating comes before everything" else "Survival tier — funded first"
-                t.category == "Rent" -> "Roof over your head — non-negotiable"
-                t.category == "Home" -> "Chip in at home — keeps the roof happy"
-                t.category == "Transport" && t.mobilityEssential -> "Non-negotiable commute — fares first"
-                t.category == "Transport" -> "Small fare buffer — remove it if you truly walk everywhere"
-                t.category == "Savings" && tightMode -> "Paused while money is tight — resume when base grows"
-                t.tier == 5 && tightMode -> "Cut in tight mode — add back when base grows"
-                avg > neat -> "Under your 3-month avg (KSh $avg) — stretch goal"
-                else -> "Tier ${t.tier} · ${t.weight.toInt()}% weight"
+                billFloor > 0 && neat <= billFloor -> T("r_bill", t.category.lowercase())
+                declaredFloor > 0 && neat <= declaredFloor -> T("r_declared", t.category.lowercase())
+                t.category == "Food" && homeFed -> T("r_food_home")
+                t.category == "Food" && persona == Persona.HOSTEL_NOCOOK -> T("r_food_nocook")
+                t.category == "Food" -> if (tightMode) T("r_food_tight") else T("r_food")
+                t.category == "Rent" -> T("r_rent")
+                t.category == "Home" -> T("r_home")
+                t.category == "Transport" && t.mobilityEssential -> T("r_transport_essential")
+                t.category == "Transport" -> T("r_transport")
+                t.category == "Savings" && tightMode -> T("r_savings_tight")
+                t.tier == 5 && tightMode -> T("r_tier5_tight")
+                avg > neat -> T("r_avg", avg.toString())
+                else -> T("r_tier", t.tier.toString(), t.weight.toInt().toString())
             }
             suggestions.add(BudgetSuggestion(t.category, neat, pct, reason, t.tier == 1))
         }
@@ -346,22 +349,31 @@ fun smartBudget(
             val reduction = minOf(current.amount, excess)
             val revised = current.amount - reduction
             excess -= reduction
-            suggestions[i] = current.copy(
-                amount = revised,
-                percent = if (planBase > 0) (revised / planBase * 100).toInt() else 0,
-                reason = if (reduction > 0) "Reduced to fit current funds" else current.reason
-            )
+                suggestions[i] = current.copy(
+                    amount = revised,
+                    percent = if (planBase > 0) (revised / planBase * 100).toInt() else 0,
+                    reason = if (reduction > 0) com.pesaflow.app.ui.language.budT("r_reduced", lang) else current.reason
+                )
         }
         val removed = suggestions.filter { it.amount <= 0 }.map { it.category }
         suggestions.removeAll { it.amount <= 0 }
         dropped.addAll(removed.filterNot { it in dropped })
     }
     val total = suggestions.sumOf { it.amount }
+    val personaName = com.pesaflow.app.ui.language.budPersona(persona.name, lang)
+    val periodWord = com.pesaflow.app.ui.language.budT(
+        when (period) {
+            BudgetType.DAILY -> "tab_daily"
+            BudgetType.WEEKLY -> "tab_weekly"
+            BudgetType.SEMESTER -> "tab_semester"
+            BudgetType.ANNUAL -> "tab_annual"
+            else -> "tab_monthly"
+        }, lang
+    ).lowercase()
     val summary = if (tightMode) {
-        "Tight mode: KSh ${monthlyBase.toInt()}/mo funds survival first for ${persona.label}. " +
-            "Savings + lifestyle paused — KSh ${total.toInt()} $periodName planned."
+        com.pesaflow.app.ui.language.budT("sum_tight", lang, monthlyBase.toInt().toString(), personaName, total.toInt().toString(), periodWord)
     } else {
-        "KSh ${monthlyBase.toInt()}/mo → KSh ${total.toInt()} $periodName across ${suggestions.size} envelopes (${persona.label})."
+        com.pesaflow.app.ui.language.budT("sum_norm", lang, monthlyBase.toInt().toString(), total.toInt().toString(), periodWord, suggestions.size.toString(), personaName)
     }
     return SmartBudgetResult(suggestions, dropped, tightMode, summary, periodName)
 }

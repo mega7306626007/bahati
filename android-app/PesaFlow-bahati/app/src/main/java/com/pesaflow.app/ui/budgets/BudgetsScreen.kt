@@ -40,6 +40,7 @@ private val PERIOD_TABS = listOf("Daily", "Weekly", "Monthly", "Semester")
 fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
     val budgets by viewModel.budgets.collectAsState()
     val transactions by viewModel.allTransactions.collectAsState()
+    val lang by viewModel.currentLanguage.collectAsState()
     val savingsGoals by viewModel.savingsGoals.collectAsState()
     val monthlyIncome by viewModel.monthlyIncome.collectAsState()
     val financialSnapshot by viewModel.financialSnapshot.collectAsState()
@@ -116,13 +117,13 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
             containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
-                    title = { Text("Budgets & Plans", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge.copy(shadow = Shadow(color = Color.Black.copy(alpha = 0.65f), offset = Offset(0f, 2f), blurRadius = 8f))) },
+                    title = { Text(com.pesaflow.app.ui.language.budT("title", lang), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge.copy(shadow = Shadow(color = Color.Black.copy(alpha = 0.65f), offset = Offset(0f, 2f), blurRadius = 8f))) },
                 actions = {
                     TextButton(onClick = onAskBuddy) {
-                        Text("Ask Buddy", color = MaterialTheme.colorScheme.primary)
+                        Text(com.pesaflow.app.ui.language.budT("ask_buddy", lang), color = MaterialTheme.colorScheme.primary)
                     }
                     TextButton(onClick = { showAddDialog = true }) {
-                        Text("Add", color = MaterialTheme.colorScheme.primary)
+                        Text(com.pesaflow.app.ui.language.budT("add", lang), color = MaterialTheme.colorScheme.primary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -144,42 +145,57 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                     FilterChip(
                         selected = tab == p,
                         onClick = { tab = p },
-                        label = { Text(p) }
+                        label = {
+                            Text(
+                                com.pesaflow.app.ui.language.budT(
+                                    when (p) {
+                                        "Daily" -> "tab_daily"
+                                        "Weekly" -> "tab_weekly"
+                                        "Semester" -> "tab_semester"
+                                        else -> "tab_monthly"
+                                    }, lang
+                                )
+                            )
+                        }
                     )
                 }
             }
 
             AtmosphereBand(
                 workspace = AtmoWorkspace.BUDGET,
-                title = "Envelopes",
-                subtitle = "Daily to annual plans"
+                title = com.pesaflow.app.ui.language.budT("env_title", lang),
+                subtitle = com.pesaflow.app.ui.language.budT("env_sub", lang)
             )
             // Expense calculator: income in, suggested monthly budgets out
             ExplainChip(
-                label = "How are budgets suggested?",
-                body = "Your income and past spending set the starting point. Apply, then adjust — the budget learns as your ledger grows."
+                label = com.pesaflow.app.ui.language.budT("how_suggested", lang),
+                body = com.pesaflow.app.ui.language.budT("how_suggested_body", lang)
             )
-            com.pesaflow.app.ui.theme.ExplainableAmount(
-                amount = "KSh ${financialSnapshot.flexible.toDouble().toInt()}",
-                label = com.pesaflow.app.data.finance.FinancialVocabulary.FLEXIBLE,
-                provenance = com.pesaflow.app.data.finance.Provenance.CALCULATED,
-                breakdown = listOf(
-                    com.pesaflow.app.data.finance.FinancialVocabulary.CURRENT_BALANCE to "KSh ${financialSnapshot.liquid.toDouble().toInt()}",
-                    com.pesaflow.app.data.finance.FinancialVocabulary.COMMITTED to "KSh ${financialSnapshot.committed.toDouble().toInt()}",
-                    "Safety buffer" to "KSh ${financialSnapshot.riskBuffer.toDouble().toInt()}"
-                ),
-                footer = "A budget is a plan, not cash — it can exceed your balance. Flexible money is what is actually safe to use."
-            )
+            run {
+                val safetyBufferLabel = com.pesaflow.app.ui.language.budT("safety_buffer", lang)
+                val budgetFooter = com.pesaflow.app.ui.language.budT("budget_footer", lang)
+                com.pesaflow.app.ui.theme.ExplainableAmount(
+                    amount = "KSh ${financialSnapshot.flexible.toDouble().toInt()}",
+                    label = com.pesaflow.app.data.finance.FinancialVocabulary.FLEXIBLE,
+                    provenance = com.pesaflow.app.data.finance.Provenance.CALCULATED,
+                    breakdown = listOf(
+                        com.pesaflow.app.data.finance.FinancialVocabulary.CURRENT_BALANCE to "KSh ${financialSnapshot.liquid.toDouble().toInt()}",
+                        com.pesaflow.app.data.finance.FinancialVocabulary.COMMITTED to "KSh ${financialSnapshot.committed.toDouble().toInt()}",
+                        safetyBufferLabel to "KSh ${financialSnapshot.riskBuffer.toDouble().toInt()}"
+                    ),
+                    footer = budgetFooter
+                )
+            }
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text("Budget Calculator 🧮", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(com.pesaflow.app.ui.language.budT("calc_title", lang), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "Enter monthly income, pick a rule — get suggested budgets, apply in one tap.",
+                        com.pesaflow.app.ui.language.budT("calc_sub", lang),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -215,11 +231,14 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                     }
                     if (cashRecommendation == BudgetType.DAILY || cashRecommendation == BudgetType.WEEKLY) {
                         Text(
-                            "You have KSh ${financialSnapshot.flexible.toDouble().toInt()} flexible after commitments; " +
-                            "KSh ${recommendationSpent.toInt()} is already spent in this period. " +
-                            "At about KSh ${dailyNeed.toInt()} per essential day, plan for ${recommendationDays ?: 1} day(s) " +
-                            "and stop before the next expected income${daysUntilIncome?.let { " in $it day(s)" } ?: ""}. " +
-                            "That date is an estimate, not money you already have.",
+                            com.pesaflow.app.ui.language.budT(
+                                "cash_advice", lang,
+                                financialSnapshot.flexible.toDouble().toInt().toString(),
+                                recommendationSpent.toInt().toString(),
+                                dailyNeed.toInt().toString(),
+                                (recommendationDays ?: 1).toString(),
+                                daysUntilIncome?.let { com.pesaflow.app.ui.language.budT("cash_in_days", lang, it.toString()) } ?: ""
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -232,7 +251,8 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                             enabled = (recommendedCash ?: 0) > 0
                         ) {
                             Text(
-                                "Plan ${if (cashRecommendation == BudgetType.DAILY) "today's" else "this week's"} available cash"
+                                if (cashRecommendation == BudgetType.DAILY) com.pesaflow.app.ui.language.budT("plan_today_cash", lang)
+                                else com.pesaflow.app.ui.language.budT("plan_week_cash", lang)
                             )
                         }
                     }
@@ -240,26 +260,26 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                     OutlinedTextField(
                         value = calcIncome,
                         onValueChange = { calcIncome = it },
-                        label = { Text(if (calcCashBasis) "Available for this period (KSh)" else "Monthly income (KSh)") },
+                        label = { Text(if (calcCashBasis) com.pesaflow.app.ui.language.budT("income_label_period", lang) else com.pesaflow.app.ui.language.budT("income_label_month", lang)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf("Student", "50/30/20").forEach { r ->
-                            FilterChip(selected = (if (r == "Student") calcRule == "Student" else calcRule != "Student"), onClick = { calcRule = r }, label = { Text(if (r == "Student") "Campus Survival" else r) })
+                            FilterChip(selected = (if (r == "Student") calcRule == "Student" else calcRule != "Student"), onClick = { calcRule = r }, label = { Text(if (r == "Student") com.pesaflow.app.ui.language.budT("rule_campus", lang) else r) })
                         }
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Your setup — budgets reshape around it", style = MaterialTheme.typography.labelLarge)
+                    Text(com.pesaflow.app.ui.language.budT("setup_title", lang), style = MaterialTheme.typography.labelLarge)
                     Text(
-                        personaSel.blurb,
+                        com.pesaflow.app.ui.language.budPersona(personaSel.name, lang, blurb = true),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Persona.entries.chunked(3).forEach { row ->
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             row.forEach { p ->
-                                FilterChip(selected = personaSel == p, onClick = { personaSel = p }, label = { Text(p.label) })
+                                FilterChip(selected = personaSel == p, onClick = { personaSel = p }, label = { Text(com.pesaflow.app.ui.language.budPersona(p.name, lang)) })
                             }
                         }
                     }
@@ -278,18 +298,18 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                         }
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Lifestyle — same engine, different appetite", style = MaterialTheme.typography.labelLarge)
+                    Text(com.pesaflow.app.ui.language.budT("lifestyle_title", lang), style = MaterialTheme.typography.labelLarge)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         LifestylePreset.entries.forEach { style ->
-                            FilterChip(selected = calcStyle == style, onClick = { calcStyle = style }, label = { Text(style.label) })
+                            FilterChip(selected = calcStyle == style, onClick = { calcStyle = style }, label = { Text(com.pesaflow.app.ui.language.budLifestyle(style.name, lang)) })
                         }
                     }
                     Text(
                         when (calcStyle) {
-                            LifestylePreset.COMMUTER_LITE -> "Early bus, home meals — transport first, food light."
-                            LifestylePreset.FOODIE -> "Food protected above all."
-                            LifestylePreset.SAVER -> "Savings pushed, lifestyle paused."
-                            else -> "Standard campus split."
+                            LifestylePreset.COMMUTER_LITE -> com.pesaflow.app.ui.language.budT("life_commuter", lang)
+                            LifestylePreset.FOODIE -> com.pesaflow.app.ui.language.budT("life_foodie", lang)
+                            LifestylePreset.SAVER -> com.pesaflow.app.ui.language.budT("life_saver", lang)
+                            else -> com.pesaflow.app.ui.language.budT("life_balanced", lang)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -298,8 +318,8 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Auto from monthly", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-                                Text("Daily = your monthly budgets ÷ 30", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(com.pesaflow.app.ui.language.budT("auto_monthly", lang), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                                Text(com.pesaflow.app.ui.language.budT("auto_monthly_sub", lang), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             Switch(checked = autoDaily, onCheckedChange = { autoDaily = it })
                         }
@@ -323,7 +343,7 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                         val monthlyAllLimit = budgets.firstOrNull { it.category == "ALL" && it.type == BudgetType.MONTHLY }?.limitAmount ?: 0.0
                         if (!calcCashBasis && monthlyAllLimit > 0 && kotlin.math.abs(calcBase - monthlyAllLimit) / monthlyAllLimit > 0.25) {
                             TextButton(onClick = { calcIncome = calcBase.toInt().toString() }) {
-                                Text("Income moved — recalculate from KSh ${calcBase.toInt()}?")
+                                Text(com.pesaflow.app.ui.language.budT("income_moved", lang, calcBase.toInt().toString()))
                             }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
@@ -365,7 +385,8 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                             avg90ByCategory = avgMap,
                             style = calcStyle,
                             declaredByCategory = if (calcCashBasis) emptyMap() else declaredMap,
-                            periodBudgetCap = if (calcCashBasis) enteredBase else null
+                            periodBudgetCap = if (calcCashBasis) enteredBase else null,
+                            lang = lang
                         )
                         // Daily auto mode still derives from monthly envelopes when present.
                         val periodName = plan.periodName
@@ -375,8 +396,7 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                         val dropped: List<String> = plan.dropped
                         if (plan.tightMode) {
                             Text(
-                                "Tight mode 🛡️ — money is little so Food + Rent eat first. " +
-                                    "Savings and lifestyle pause instead of starving you.",
+                                com.pesaflow.app.ui.language.budT("tight_mode", lang),
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.primary
@@ -384,8 +404,7 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                         }
                         Text(
                             if (calcCashBasis) {
-                                "Cash-constrained plan: KSh ${enteredBase?.toInt() ?: 0} maximum for this period. " +
-                                    "This uses current flexible cash, not expected future income."
+                                com.pesaflow.app.ui.language.budT("cash_plan", lang, (enteredBase?.toInt() ?: 0).toString())
                             } else plan.summary,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -394,15 +413,14 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                         val periodBase = if (calcCashBasis) enteredBase ?: 0.0 else calcBase * periodScale(calcPeriod)
                         if (plannedTotal > periodBase) {
                             Text(
-                                "Funding gap: this plan exceeds the entered base by KSh ${(plannedTotal - periodBase).toInt()}. " +
-                                    "Treat the difference as unfunded, not spendable.",
+                                com.pesaflow.app.ui.language.budT("fund_gap", lang, (plannedTotal - periodBase).toInt().toString()),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error
                             )
                         }
                         if (dropped.isNotEmpty()) {
                             Text(
-                                "Paused to protect Food + Rent: ${dropped.joinToString(", ")}",
+                                com.pesaflow.app.ui.language.budT("paused_for", lang, dropped.joinToString(", ")),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -438,10 +456,25 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                             shape = RoundedCornerShape(16.dp),
                             enabled = !calcCashBasis || plannedTotal <= periodBase.toInt(),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) { Text(if (applySig in acked) "Applied ${prioritized.size} ✓" else "Apply as $periodName Budgets", color = MaterialTheme.colorScheme.onPrimary) }
+                        ) {
+                            val periodWord = com.pesaflow.app.ui.language.budT(
+                                when (calcPeriod) {
+                                    BudgetType.DAILY -> "tab_daily"
+                                    BudgetType.WEEKLY -> "tab_weekly"
+                                    BudgetType.SEMESTER -> "tab_semester"
+                                    BudgetType.ANNUAL -> "tab_annual"
+                                    else -> "tab_monthly"
+                                }, lang
+                            ).lowercase()
+                            Text(
+                                if (applySig in acked) com.pesaflow.app.ui.language.budT("applied", lang, prioritized.size.toString())
+                                else com.pesaflow.app.ui.language.budT("apply_as", lang, periodWord),
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
                     } else {
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Log income first (or type it above) to see suggestions.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(com.pesaflow.app.ui.language.budT("log_income", lang), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -449,19 +482,32 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
             // Period hero card
             com.pesaflow.app.ui.theme.PpCard(kind = com.pesaflow.app.ui.theme.PpCardKind.LARGE) {
                 Column(verticalArrangement = Arrangement.spacedBy(com.pesaflow.app.ui.theme.ppSpacing.sm)) {
-                    Text("$tab budget · $windowLabel", style = com.pesaflow.app.ui.theme.ppTypography.labelLarge, color = com.pesaflow.app.ui.theme.ppColors.textTertiary)
+                    Text(
+                        com.pesaflow.app.ui.language.budT(
+                            "hero_line", lang,
+                            com.pesaflow.app.ui.language.budT(when (tab) { "Daily" -> "tab_daily" "Weekly" -> "tab_weekly" "Semester" -> "tab_semester" else -> "tab_monthly" }, lang),
+                            windowLabel
+                        ),
+                        style = com.pesaflow.app.ui.theme.ppTypography.labelLarge, color = com.pesaflow.app.ui.theme.ppColors.textTertiary
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
                     if (target <= 0) {
                         var quickAmount by remember(tab) { mutableStateOf("") }
                         Text(
-                            "No $tab budget set yet.",
+                            com.pesaflow.app.ui.language.budT(
+                                "no_budget", lang,
+                                com.pesaflow.app.ui.language.budT(when (tab) { "Daily" -> "tab_daily" "Weekly" -> "tab_weekly" "Semester" -> "tab_semester" else -> "tab_monthly" }, lang)
+                            ),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            "Spent $windowLabel so far: KSh ${spent.toInt()}. Set your $tab limit here:",
+                            com.pesaflow.app.ui.language.budT(
+                                "set_limit_hint", lang, windowLabel, spent.toInt().toString(),
+                                com.pesaflow.app.ui.language.budT(when (tab) { "Daily" -> "tab_daily" "Weekly" -> "tab_weekly" "Semester" -> "tab_semester" else -> "tab_monthly" }, lang)
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -474,7 +520,7 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                             OutlinedTextField(
                                 value = quickAmount,
                                 onValueChange = { quickAmount = it },
-                                label = { Text("KSh limit") },
+                                label = { Text(com.pesaflow.app.ui.language.budT("ksh_limit", lang)) },
                                 modifier = Modifier.weight(1f)
                             )
                             Button(
@@ -488,7 +534,7 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                                 },
                                 shape = RoundedCornerShape(16.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                            ) { Text("Set", color = MaterialTheme.colorScheme.onPrimary) }
+                            ) { Text(com.pesaflow.app.ui.language.budT("set_btn", lang), color = MaterialTheme.colorScheme.onPrimary) }
                         }
                     } else {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -502,13 +548,17 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                                     color = if (left < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    "left of KSh ${target.toInt()}",
+                                    com.pesaflow.app.ui.language.budT("left_of", lang, target.toInt().toString()),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 if (carry > 0) {
                                     Text(
-                                        "＋KSh ${carry.toInt()} unspent from $carryLabel — already inside your balance 🎲",
+                                        com.pesaflow.app.ui.language.budT(
+                                            "carry", lang, carry.toInt().toString(),
+                                            if (tab == "Weekly") com.pesaflow.app.ui.language.budT("last_week", lang)
+                                            else com.pesaflow.app.ui.language.budT("last_month", lang)
+                                        ),
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.primary
@@ -526,7 +576,8 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                             com.pesaflow.app.data.finance.periodVerdict(
                                 tab, spent, target,
                                 java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_MONTH),
-                                java.util.Calendar.getInstance().getActualMaximum(java.util.Calendar.DAY_OF_MONTH)
+                                java.util.Calendar.getInstance().getActualMaximum(java.util.Calendar.DAY_OF_MONTH),
+                                lang
                             ),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Medium,
@@ -539,7 +590,7 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
             // Category budgets of this period
             val categoryBudgets = budgets.filter { it.type == periodType && it.category != "ALL" }
             if (categoryBudgets.isNotEmpty()) {
-                com.pesaflow.app.ui.theme.PpSectionHeader(title = "Category budgets · $tab")
+                com.pesaflow.app.ui.theme.PpSectionHeader(title = com.pesaflow.app.ui.language.budT("cat_budgets", lang, com.pesaflow.app.ui.language.budT(when (tab) { "Daily" -> "tab_daily" "Weekly" -> "tab_weekly" "Semester" -> "tab_semester" else -> "tab_monthly" }, lang)))
                 categoryBudgets.forEach { budget ->
                     // Current-period progress per budget type (semester falls
                     // back to rolling 120d without a profile window).
@@ -577,7 +628,7 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                                                 )
                                             }
                                             TextButton(onClick = { viewModel.deleteBudget(budget.id) }) {
-                                                Text("Remove", style = com.pesaflow.app.ui.theme.ppTypography.labelMedium, color = com.pesaflow.app.ui.theme.ppColors.error)
+                                                Text(com.pesaflow.app.ui.language.budT("remove", lang), style = com.pesaflow.app.ui.theme.ppTypography.labelMedium, color = com.pesaflow.app.ui.theme.ppColors.error)
                                             }
                                         }
                                     }
@@ -586,15 +637,14 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                                 kind = if (cSpent >= budget.limitAmount) com.pesaflow.app.ui.theme.PpProgressKind.ERROR else com.pesaflow.app.ui.theme.PpProgressKind.GOLD
                             )
                             Text(
-                                "KSh ${cSpent.toInt()} of KSh ${budget.limitAmount.toInt()} · " +
-                                    if (cLeft > 0) "KSh ${cLeft.toInt()} left · ${cPct.toInt()}% used"
-                                    else "Over by KSh ${(cSpent - budget.limitAmount).toInt()}",
+                                if (cLeft > 0) com.pesaflow.app.ui.language.budT("bar_left", lang, cSpent.toInt().toString(), budget.limitAmount.toInt().toString(), cLeft.toInt().toString(), cPct.toInt().toString())
+                                else com.pesaflow.app.ui.language.budT("bar_over", lang, cSpent.toInt().toString(), budget.limitAmount.toInt().toString(), (cSpent - budget.limitAmount).toInt().toString()),
                                 style = com.pesaflow.app.ui.theme.ppTypography.bodySmall,
                                 color = com.pesaflow.app.ui.theme.ppColors.textTertiary
                             )
                             // Budget-vs-balance: a plan is not cash.
                             Text(
-                                "Budget remaining — not your total money (Current balance KSh ${financialSnapshot.liquid.toDouble().toInt()}).",
+                                com.pesaflow.app.ui.language.budT("bar_note", lang, financialSnapshot.liquid.toDouble().toInt().toString()),
                                 style = com.pesaflow.app.ui.theme.ppTypography.bodySmall,
                                 color = com.pesaflow.app.ui.theme.ppColors.textTertiary
                             )
@@ -606,7 +656,7 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                                 }?.let { fare ->
                                     val monthly = com.pesaflow.app.data.income.IncomeSourceStore.budgetedMonthly(fare).toInt()
                                     Text(
-                                        "Parent fare (${fare.frequencyLabel()} KSh ${fare.expectedAmount.toInt()} ≈ KSh $monthly/mo) covers this envelope first.",
+                                        com.pesaflow.app.ui.language.budT("fare_covers", lang, fare.frequencyLabel(), fare.expectedAmount.toInt().toString(), monthly.toString()),
                                         style = com.pesaflow.app.ui.theme.ppTypography.bodySmall,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.primary
@@ -616,7 +666,7 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                             if (budget.sharedWith.isNotBlank()) {
                                 val members = com.pesaflow.app.data.ledger.splitUserList(budget.sharedWith)
                                 Text(
-                                    "Shared: ${members.joinToString(", ")} · KSh ${(budget.limitAmount / (members.size + 1)).toInt()} each",
+                                    com.pesaflow.app.ui.language.budT("shared_line", lang, members.joinToString(", "), (budget.limitAmount / (members.size + 1)).toInt().toString()),
                                     style = com.pesaflow.app.ui.theme.ppTypography.bodySmall,
                                     fontWeight = FontWeight.SemiBold,
                                     color = com.pesaflow.app.ui.theme.ppColors.brightBlue
@@ -625,14 +675,14 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                 TextButton(onClick = { editingBudget = budget }) {
                                     Text(
-                                        "Edit",
+                                        com.pesaflow.app.ui.language.budT("edit", lang),
                                         style = com.pesaflow.app.ui.theme.ppTypography.labelMedium,
                                         color = com.pesaflow.app.ui.theme.ppColors.gold
                                     )
                                 }
                                 TextButton(onClick = { sharingBudget = budget }) {
                                     Text(
-                                        if (budget.sharedWith.isBlank()) "Share" else "Edit share",
+                                        if (budget.sharedWith.isBlank()) com.pesaflow.app.ui.language.budT("share_btn", lang) else com.pesaflow.app.ui.language.budT("edit_share", lang),
                                         style = com.pesaflow.app.ui.theme.ppTypography.labelMedium,
                                         color = com.pesaflow.app.ui.theme.ppColors.gold
                                     )
@@ -643,7 +693,10 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                 }
             } else {
                 Text(
-                    "No $tab category budgets yet — give every shilling a job.",
+                    com.pesaflow.app.ui.language.budT(
+                        "no_cat", lang,
+                        com.pesaflow.app.ui.language.budT(when (tab) { "Daily" -> "tab_daily" "Weekly" -> "tab_weekly" "Semester" -> "tab_semester" else -> "tab_monthly" }, lang)
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -651,16 +704,16 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                     onClick = { showAddDialog = true },
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) { Text("Create First Budget", color = MaterialTheme.colorScheme.onPrimary) }
+                ) { Text(com.pesaflow.app.ui.language.budT("create_first", lang), color = MaterialTheme.colorScheme.onPrimary) }
             }
 
             // My Plans (savings goals with required pace)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("My Plans 🎯", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                TextButton(onClick = { showPlanDialog = true }) { Text("+ Add Plan") }
+                Text(com.pesaflow.app.ui.language.budT("plans_title", lang), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                TextButton(onClick = { showPlanDialog = true }) { Text(com.pesaflow.app.ui.language.budT("add_plan", lang)) }
             }
             if (savingsGoals.isEmpty()) {
-                Text("No plans yet. A plan is a goal with a deadline — e.g. Laptop by December.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(com.pesaflow.app.ui.language.budT("no_plans", lang), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 savingsGoals.forEach { goal ->
                     val remaining = (goal.targetAmount - goal.currentAmount).coerceAtLeast(0.0)
@@ -676,7 +729,7 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                                     color = com.pesaflow.app.ui.theme.ppColors.textPrimary
                                 )
                                 TextButton(onClick = { viewModel.deleteSavingsGoal(goal.id) }) {
-                                    Text("Remove", style = com.pesaflow.app.ui.theme.ppTypography.labelMedium, color = com.pesaflow.app.ui.theme.ppColors.error)
+                                    Text(com.pesaflow.app.ui.language.budT("remove", lang), style = com.pesaflow.app.ui.theme.ppTypography.labelMedium, color = com.pesaflow.app.ui.theme.ppColors.error)
                                 }
                             }
                             com.pesaflow.app.ui.theme.PpProgress(
@@ -685,15 +738,14 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                "KSh ${goal.currentAmount.toInt()} of KSh ${goal.targetAmount.toInt()} · " +
-                                    if (remaining <= 0) "complete! 🎉"
-                                    else "KSh ${remaining.toInt()} to go · KSh ${perDay.toInt()}/day for $daysLeft days",
+                                if (remaining <= 0) com.pesaflow.app.ui.language.budT("goal_done", lang, goal.currentAmount.toInt().toString(), goal.targetAmount.toInt().toString())
+                                else com.pesaflow.app.ui.language.budT("goal_line", lang, goal.currentAmount.toInt().toString(), goal.targetAmount.toInt().toString(), remaining.toInt().toString(), perDay.toInt().toString(), daysLeft.toString()),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                Text("Fills from what you don't spend 💧", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(com.pesaflow.app.ui.language.budT("fills_from", lang), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -712,10 +764,10 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
 
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("New Budget") },
+            title = { Text(com.pesaflow.app.ui.language.budT("new_budget", lang)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = category, onValueChange = { category = it }, label = { Text("Category (ALL = everything)") })
+                    OutlinedTextField(value = category, onValueChange = { category = it }, label = { Text(com.pesaflow.app.ui.language.budT("cat_label", lang)) })
                     val suggestion = remember(category, transactions) {
                         if (category.isBlank()) null
                         else {
@@ -729,11 +781,11 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                     }
                     if (suggestion != null && limit.toDoubleOrNull() == null) {
                         TextButton(onClick = { limit = suggestion.toString() }) {
-                            Text("Suggested: KSh $suggestion (your 3-month average) — tap to use")
+                            Text(com.pesaflow.app.ui.language.budT("suggested", lang, suggestion.toString()))
                         }
                     }
-                    OutlinedTextField(value = limit, onValueChange = { limit = it }, label = { Text("Limit (KSh)") })
-                    OutlinedTextField(value = sharedWith, onValueChange = { sharedWith = it }, label = { Text("Share with (names, comma separated)") })
+                    OutlinedTextField(value = limit, onValueChange = { limit = it }, label = { Text(com.pesaflow.app.ui.language.budT("limit_label", lang)) })
+                    OutlinedTextField(value = sharedWith, onValueChange = { sharedWith = it }, label = { Text(com.pesaflow.app.ui.language.budT("share_with", lang)) })
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         BudgetType.entries.forEach { type ->
                             FilterChip(
@@ -754,9 +806,9 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                         viewModel.upsertBudget(category.trim(), limitVal, selectedType, sharedWith.trim())
                         showAddDialog = false
                     }
-                }) { Text("Save") }
+                }) { Text(com.pesaflow.app.ui.language.budT("save", lang)) }
             },
-            dismissButton = { TextButton(onClick = { showAddDialog = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { showAddDialog = false }) { Text(com.pesaflow.app.ui.language.budT("cancel", lang)) } }
         )
     }
 
@@ -767,12 +819,12 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
 
         AlertDialog(
             onDismissRequest = { showPlanDialog = false },
-            title = { Text("New Plan") },
+            title = { Text(com.pesaflow.app.ui.language.budT("new_plan", lang)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("What do you want to accomplish?") })
-                    OutlinedTextField(value = target, onValueChange = { target = it }, label = { Text("Target (KSh)") })
-                    OutlinedTextField(value = days, onValueChange = { days = it }, label = { Text("Days from now") })
+                    OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text(com.pesaflow.app.ui.language.budT("plan_what", lang)) })
+                    OutlinedTextField(value = target, onValueChange = { target = it }, label = { Text(com.pesaflow.app.ui.language.budT("plan_target", lang)) })
+                    OutlinedTextField(value = days, onValueChange = { days = it }, label = { Text(com.pesaflow.app.ui.language.budT("plan_days", lang)) })
                 }
             },
             confirmButton = {
@@ -783,9 +835,9 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                         viewModel.addSavingsGoal(title.trim(), targetVal, daysVal)
                         showPlanDialog = false
                     }
-                }) { Text("Save Plan") }
+                }) { Text(com.pesaflow.app.ui.language.budT("save_plan", lang)) }
             },
-            dismissButton = { TextButton(onClick = { showPlanDialog = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { showPlanDialog = false }) { Text(com.pesaflow.app.ui.language.budT("cancel", lang)) } }
         )
     }
 
@@ -793,18 +845,18 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
         var amount by remember { mutableStateOf(b.limitAmount.toInt().toString()) }
         AlertDialog(
             onDismissRequest = { editingBudget = null },
-            title = { Text("Edit \"${b.category}\" budget") },
+            title = { Text(com.pesaflow.app.ui.language.budT("edit_title", lang, b.category)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "New monthly limit. Saving replaces this envelope — never stacks a twin.",
+                        com.pesaflow.app.ui.language.budT("edit_sub", lang),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     OutlinedTextField(
                         value = amount,
                         onValueChange = { amount = it },
-                        label = { Text("Limit (KSh)") },
+                        label = { Text(com.pesaflow.app.ui.language.budT("limit_label", lang)) },
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
                     )
                 }
@@ -815,9 +867,9 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
                         viewModel.upsertBudget(b.category, it, b.type, b.sharedWith)
                     }
                     editingBudget = null
-                }) { Text("Save") }
+                }) { Text(com.pesaflow.app.ui.language.budT("save", lang)) }
             },
-            dismissButton = { TextButton(onClick = { editingBudget = null }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { editingBudget = null }) { Text(com.pesaflow.app.ui.language.budT("cancel", lang)) } }
         )
     }
 
@@ -825,24 +877,24 @@ fun BudgetsScreen(viewModel: FinanceViewModel, onAskBuddy: () -> Unit = {}) {
         var names by remember { mutableStateOf(b.sharedWith) }
         AlertDialog(
             onDismissRequest = { sharingBudget = null },
-            title = { Text("Share \"${b.category}\" budget") },
+            title = { Text(com.pesaflow.app.ui.language.budT("share_title", lang, b.category)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "Household names, comma separated. The limit splits evenly between you and them.",
+                        com.pesaflow.app.ui.language.budT("share_sub", lang),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    OutlinedTextField(value = names, onValueChange = { names = it }, label = { Text("e.g. Brian, Faith") })
+                    OutlinedTextField(value = names, onValueChange = { names = it }, label = { Text(com.pesaflow.app.ui.language.budT("share_eg", lang)) })
                 }
             },
             confirmButton = {
                 Button(onClick = {
                     viewModel.shareBudget(b.id, names.trim())
                     sharingBudget = null
-                }) { Text("Save") }
+                }) { Text(com.pesaflow.app.ui.language.budT("save", lang)) }
             },
-            dismissButton = { TextButton(onClick = { sharingBudget = null }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { sharingBudget = null }) { Text(com.pesaflow.app.ui.language.budT("cancel", lang)) } }
         )
     }
 }

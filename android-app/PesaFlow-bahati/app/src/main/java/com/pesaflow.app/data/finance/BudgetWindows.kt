@@ -126,16 +126,25 @@ fun evaluateCategoryPace(
 // Hero verdict copy: over-cap always warns; the 80% klaxon fires only when
 // pace is hot (or off the Monthly tab, where pace doesn't apply). Pure,
 // unit-tested — every screen showing a budget verdict must call this.
-fun periodVerdict(tab: String, spent: Double, target: Double, dom: Int, dim: Int): String {
+fun periodVerdict(
+    tab: String,
+    spent: Double,
+    target: Double,
+    dom: Int,
+    dim: Int,
+    lang: com.pesaflow.app.data.models.AppLanguage = com.pesaflow.app.data.models.AppLanguage.ENGLISH
+): String {
     if (target <= 0) return ""
     val pct = (spent / target * 100).toInt()
     val pace = evaluateCategoryPace(spent, target, dom, dim)
     val hot = pace != BudgetPace.SAFE && pace != BudgetPace.ON_TRACK
+    fun T(key: String, a: String = "", b: String = "", c: String = ""): String =
+        com.pesaflow.app.ui.language.budT(key, lang, a, b, c)
     return when {
-        spent > target -> "Over $tab budget by KSh ${(spent - target).toInt()} ($pct%) — essentials only. 🛑"
-        pct >= 80 && (tab != "Monthly" || hot) -> "$pct% used — KSh ${(target - spent).toInt()} left. Slow down. ⚠️"
-        pct >= 80 -> "$pct% used — KSh ${(target - spent).toInt()} left, still within pace. 👌"
-        else -> "$pct% used — KSh ${(target - spent).toInt()} left. On track 👌."
+        spent > target -> T("verdict_over", tab, (spent - target).toInt().toString(), pct.toString())
+        pct >= 80 && (tab != "Monthly" || hot) -> T("verdict_hot", pct.toString(), (target - spent).toInt().toString())
+        pct >= 80 -> T("verdict_warm", pct.toString(), (target - spent).toInt().toString())
+        else -> T("verdict_ok", pct.toString(), (target - spent).toInt().toString())
     }
 }
 
@@ -144,15 +153,20 @@ fun periodVerdict(tab: String, spent: Double, target: Double, dom: Int, dim: Int
  * human label. Weekly means the calendar week everywhere in the app —
  * never a drifting rolling 7 days.
  */
-fun budgetTabWindow(tab: String, now: Long): Triple<BudgetType, TimeRange, String> {
+fun budgetTabWindow(
+    tab: String,
+    now: Long,
+    lang: com.pesaflow.app.data.models.AppLanguage = com.pesaflow.app.data.models.AppLanguage.ENGLISH
+): Triple<BudgetType, TimeRange, String> {
+    val T = { key: String -> com.pesaflow.app.ui.language.budT(key, lang) }
     return when (tab) {
-        "Daily" -> Triple(BudgetType.DAILY, todayRange(now), "today")
-        "Weekly" -> Triple(BudgetType.WEEKLY, thisWeekRange(now), "this week")
+        "Daily" -> Triple(BudgetType.DAILY, todayRange(now), T("win_today"))
+        "Weekly" -> Triple(BudgetType.WEEKLY, thisWeekRange(now), T("win_week"))
         "Semester" -> Triple(
             BudgetType.SEMESTER,
             TimeRange(addDays(startOfDay(now), -120), addDays(startOfDay(now), 1)),
-            "last 120 days"
+            T("win_120")
         )
-        else -> Triple(BudgetType.MONTHLY, monthRange(now), "this month")
+        else -> Triple(BudgetType.MONTHLY, monthRange(now), T("win_month"))
     }
 }
