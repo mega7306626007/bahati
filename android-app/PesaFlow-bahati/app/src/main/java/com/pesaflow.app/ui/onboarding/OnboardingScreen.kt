@@ -249,7 +249,9 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
     var pendingStartMs by remember { mutableStateOf<Long?>(null) }
     fun customScanLabel(): String {
         if (customStartMs == null) {
-            return "Scan last " + if (scanWindowDays >= 150) "5 months" else if (scanWindowDays >= 90) "3 months" else "1 month"
+            // Labels match the chips exactly (30/90/150) — "1 month"
+            // used to mislabel the 30-day chip.
+            return "Scan last " + if (scanWindowDays >= 150) "5 months" else if (scanWindowDays >= 90) "3 months" else if (scanWindowDays >= 30) "30 days" else "$scanWindowDays days"
         }
         val fmt = java.text.SimpleDateFormat("d MMM", java.util.Locale.getDefault())
         val days = (((customEndMs ?: System.currentTimeMillis()) - customStartMs!!) / DAY_MS + 1).toInt().coerceAtLeast(1)
@@ -257,6 +259,8 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
             fmt.format(java.util.Date(customEndMs ?: System.currentTimeMillis())) + " ($days days)"
     }
     var scanQueued by rememberSaveable { mutableStateOf(0) }
+    // SMS scans only: statement imports must never flip this button.
+    var smsScanned by rememberSaveable { mutableStateOf(false) }
     var showSmsRationale by rememberSaveable { mutableStateOf(false) }
     val smsPerm = rememberPermissionState(Manifest.permission.READ_SMS) { granted ->
         smsGranted = granted
@@ -340,6 +344,10 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
         // mid-month (the 11th, 11 days of history) paces to a full month
         // instead of understating ~3x. Floored so day-one scans stay sane.
         val months = ((now - oldest).toDouble() / (30 * DAY_MS)).coerceAtLeast(1.0 / 30)
+        // Annualizing under ~7 days of history inflates wildly (one KSh 500
+        // day reads as a KSh 15,000 month). Thin samples leave the boxes
+        // blank for typing instead of prefilling fiction.
+        val spanMature = (now - oldest) >= 7 * DAY_MS
         fun monthlyFor(vararg names: String): Double {
             val keys = names.map { it.lowercase() }.toSet()
             return rows.filter {
@@ -350,7 +358,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
         val monthlyExpense = rows.filter {
             it.type == com.pesaflow.app.data.models.TransactionType.EXPENSE && !it.isFeeRow()
         }.sumOf { it.amount } / months
-        if (reconciled) {
+        if (reconciled && spanMature) {
             if (monthlyBudget.isBlank() && monthlyExpense > 0) monthlyBudget = monthlyExpense.toInt().toString()
             if (foodBudget.isBlank() && monthlyFor("Food") > 0) foodBudget = monthlyFor("Food").toInt().toString()
             if (rentGuess.isBlank() && monthlyFor("Rent") > 0) {
@@ -429,8 +437,10 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
         latestBalance?.let { com.pesaflow.app.data.parsers.saveMpesaBalance(appContext, it) }
         viewModel.importStatementPending(rows) { queued, skipped ->
             statementBusy = false
+            // Separate counter: statement rows are NOT sms rows. Adding
+            // them to scanQueued double-counted the report after 2 imports
+            // and flipped the SMS button to "Rescan" with no scan done.
             statementQueued += queued
-            scanQueued += queued
             // Reconciled only when rows sum to the file's own totals (or
             // nothing was skipped for headerless CSVs) — partial parses
             // queue for review but never prefill money boxes.
@@ -705,7 +715,11 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                     android.widget.Toast.LENGTH_SHORT
                                 ).show()
                             } else {
-                                val saved = ContactBook.save(
+                                // Two stores, honest feedback: the book row and
+                                // the memory triple save separately, so report
+                                // each truthfully instead of one && that can
+                                // leave a saved contact behind a failure toast.
+                                val bookOk = ContactBook.save(
                                     prefs = bootPrefs,
                                     name = cleanName,
                                     displayName = cleanName,
@@ -714,15 +728,16 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                     scope = contactScope,
                                     notes = "",
                                     matchTerms = contactAliases
-                                ) && saveContactMemory(
+                                )
+                                val memOk = if (bookOk) saveContactMemory(
                                     prefs = bootPrefs,
                                     name = cleanName,
                                     label = contactRelationship,
                                     category = contactCategory,
                                     scope = contactScope,
                                     matchTerms = contactAliases
-                                )
-                                if (saved) {
+                                ) else false
+                                if (bookOk) {
                                     onboardingContacts = ContactBook.readAll(bootPrefs)
                                     // New person instantly shows true history (card
                                     // agrees with search on first sight) — and any
@@ -734,6 +749,13 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                     contactCategory = ""
                                     contactAliases = ""
                                     contactScope = "BOTH"
+                                    if (!memOk) {
+                                        android.widget.Toast.makeText(
+                                            appContext,
+                                            "Saved $cleanName, but the memory rule didn't stick — re-save to retry.",
+                                            android.widget.Toast.LENGTH_LONG
+                                        ).show()
+                                    }
                                 } else {
                                     android.widget.Toast.makeText(
                                         appContext,
@@ -870,7 +892,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                         onSelect = { cooksFood = it }
                     )
                     Text(
-                        if (homeKind == "Parents") "Home roof — no rent box, budgets swap Rent for a small Home upkeep envelope."
+                        if (homeKind == "Parents") "Home roof — no rent box, so that share stays in your monthly budget for upkeep and savings."
                         else if (cooksFood == "No") "Bought meals cost most — Food gets protected first."
                         else if (commuteForPlanning == "Far") "Long matatu daily — Transport becomes non-negotiable."
                         else if (commuteLen == "Walk" && walkOk == "No") "Walking is not practical every class day — add the fare you usually pay."
@@ -1158,10 +1180,17 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                     // Rescans stamp SIM slots onto rows stored before tracking.
                                     viewModel.backfillSimSlots(r.parsed)
                                     scanQueued = queued
-                                    if (monthlyBudget.isBlank() && r.monthlyExpense > 0) monthlyBudget = r.monthlyExpense.toInt().toString()
-                                    if (foodBudget.isBlank() && r.monthlyFor("Food") > 0) foodBudget = r.monthlyFor("Food").toInt().toString()
-                                    if (rentGuess.isBlank() && r.monthlyFor("Rent") > 0) { rentGuess = r.monthlyFor("Rent").toInt().toString(); rentFromScan = true }
-                                    if (transportDaily.isBlank() && r.monthlyFor("Transport") > 0) { transportDaily = (r.monthlyFor("Transport") / 30).toInt().toString(); transportFromScan = true }
+                                    smsScanned = true
+                                    // Same thin-sample guard as statements: under
+                                    // ~7 days of history the monthly annualization
+                                    // is fiction, so boxes stay blank for typing.
+                                    val scanSpanOk = r.parsed.isEmpty() || (System.currentTimeMillis() - r.parsed.minOf { it.dateTimestamp } >= 7 * DAY_MS)
+                                    if (scanSpanOk) {
+                                        if (monthlyBudget.isBlank() && r.monthlyExpense > 0) monthlyBudget = r.monthlyExpense.toInt().toString()
+                                        if (foodBudget.isBlank() && r.monthlyFor("Food") > 0) foodBudget = r.monthlyFor("Food").toInt().toString()
+                                        if (rentGuess.isBlank() && r.monthlyFor("Rent") > 0) { rentGuess = r.monthlyFor("Rent").toInt().toString(); rentFromScan = true }
+                                        if (transportDaily.isBlank() && r.monthlyFor("Transport") > 0) { transportDaily = (r.monthlyFor("Transport") / 30).toInt().toString(); transportFromScan = true }
+                                    }
                                     val helbScanned = helbReceived(r.parsed)
                                     if (helbSem.isBlank() && helbScanned > 0) { helbSem = helbScanned.toInt().toString(); helbFromScan = true }
                                     scanResult = r
@@ -1211,7 +1240,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                         },
                         enabled = !scanning,
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                    ) { Text(if (scanning) "Scanning... $scanProgress found" else if (scanResult == null) customScanLabel() else "Rescan", color = MaterialTheme.colorScheme.onSecondary) }
+                    ) { Text(if (scanning) "Scanning... $scanProgress found" else if (!smsScanned) customScanLabel() else "Rescan", color = MaterialTheme.colorScheme.onSecondary) }
                     // Custom calendar range: start day first, end day second
                     // (defaults to today). Picking a chip clears it again.
                     if (showStartPick) {
@@ -1300,9 +1329,13 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                     }
                     if (showStatementPassword) {
                         AlertDialog(
+                            // Dismiss drops the password too: "never leaves
+                            // this phone" must include not lingering in
+                            // saved state for the next PDF.
                             onDismissRequest = {
                                 showStatementPassword = false
                                 pendingPdfBytes = null
+                                statementPassword = ""
                                 statementPasswordError = null
                             },
                             title = { Text("Statement password 🔐") },
@@ -1351,6 +1384,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                 TextButton(onClick = {
                                     showStatementPassword = false
                                     pendingPdfBytes = null
+                                    statementPassword = ""
                                     statementPasswordError = null
                                 }) { Text("Cancel") }
                             }
@@ -1395,7 +1429,13 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                 }.takeIf { it.isNotBlank() }?.let {
                                     Text("Top: $it", style = MaterialTheme.typography.bodySmall)
                                 }
-                                Text(scanQueued.toString() + " queued to pending for Home approval. Placeholders only - edit anything.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    (if (scanQueued > 0) "$scanQueued SMS" else "") +
+                                        (if (scanQueued > 0 && statementQueued > 0) " + " else "") +
+                                        (if (statementQueued > 0) "$statementQueued import" else "") +
+                                        " queued to pending for Home approval. Placeholders only - edit anything.",
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                         // Fare proposal (commuters only): same ~7–9am amount
@@ -1543,10 +1583,31 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                 if (feesDueMillis > 0L) "you entered" else "not set"
                             )
                             val revSources = viewModel.incomeSources.value
+                            // Preview what Finish WILL seed (same guards as the
+                            // finish block): review used to show "— · skip"
+                            // while Finish created up to 3 sources.
+                            val semMonthsPreview = if (semesterStartMillis > 0L && endMillis > semesterStartMillis) {
+                                ((endMillis - semesterStartMillis).toDouble() / (30 * DAY_MS)).coerceAtLeast(1.0)
+                            } else 4.0
+                            val previewSeeds = mutableListOf<String>()
+                            val liveKinds = revSources.map { it.kind }.toSet()
+                            val helbPrev = if (fundSource == "SELF") 0.0 else helbSem.toDoubleOrNull() ?: 0.0
+                            if (helbPrev > 0 && "HELB_MPESA" !in liveKinds && "HELB_BANK" !in liveKinds) {
+                                previewSeeds.add("HELB upkeep KSh " + (helbPrev / semMonthsPreview).toInt() + "/mo")
+                            }
+                            sponsorMonthly.toDoubleOrNull()?.takeIf { it > 0 }?.let {
+                                if ("PARENT" !in liveKinds && "GUARDIAN" !in liveKinds) previewSeeds.add("Sponsor KSh " + it.toInt() + "/mo")
+                            }
+                            transportDaily.toDoubleOrNull()?.takeIf { it > 0 && farePayer != "Me" && commuteForPlanning != "Walk" }?.let { daily ->
+                                if ("PARENT" !in liveKinds) previewSeeds.add("Parent fare " + if (farePayer == "Parents weekly") "KSh " + (daily * 5).toInt() + "/wk" else "KSh " + daily.toInt() + "/day")
+                            }
                             ReviewRow(
                                 "Income sources",
-                                if (revSources.isEmpty()) "—" else revSources.size.toString() + " (" + revSources.joinToString(", ") { it.displayKind() } + ")",
-                                if (revSources.isEmpty()) "skip" else "KSh " + revSources.sumOf { IncomeSourceStore.budgetedMonthly(it) }.toInt() + " expected"
+                                if (revSources.isEmpty() && previewSeeds.isEmpty()) "—"
+                                else (revSources.map { it.displayKind() } + previewSeeds).joinToString(", "),
+                                if (revSources.isEmpty() && previewSeeds.isEmpty()) "skip"
+                                else "KSh " + revSources.sumOf { IncomeSourceStore.budgetedMonthly(it) }.toInt() + " expected" +
+                                    (if (previewSeeds.isNotEmpty()) " + " + previewSeeds.size + " on Finish" else "")
                             )
                             ReviewRow("Reports", "Night · Sunday · Daily", "auto-armed")
                             val revPersona = com.pesaflow.app.ui.budgets.parsePersona(
@@ -1677,8 +1738,13 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             val existingKinds = viewModel.incomeSources.value.map { it.kind }.toSet()
                             val seededIncome = mutableListOf<IncomeSource>()
                             if (helbTotal > 0 && "HELB_MPESA" !in existingKinds && "HELB_BANK" !in existingKinds) {
-                                // Tranches land per semester (~4 months): monthly share keeps budget math honest.
-                                seededIncome.add(IncomeSource(kind = "HELB_MPESA", label = "HELB upkeep", expectedAmount = helbTotal / 4, frequency = "MONTHLY", autoTrack = true))
+                                // Tranches spread over the ACTUAL semester length
+                                // (was a fixed /4 — a 6-month term understated
+                                // monthly upkeep by a third).
+                                val semMonths = if (semesterStartMillis > 0L && endMillis > semesterStartMillis) {
+                                    ((endMillis - semesterStartMillis).toDouble() / (30 * DAY_MS)).coerceAtLeast(1.0)
+                                } else 4.0
+                                seededIncome.add(IncomeSource(kind = "HELB_MPESA", label = "HELB upkeep", expectedAmount = helbTotal / semMonths, frequency = "MONTHLY", autoTrack = true))
                             }
                             sponsorMonthly.toDoubleOrNull()?.takeIf { it > 0 }?.let { sp ->
                                 if ("PARENT" !in existingKinds && "GUARDIAN" !in existingKinds) {
@@ -1854,6 +1920,9 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                 viewModel.bills.value.none { it.name == "Semester fees" && it.status != "PAID" }
                             ) {
                                 viewModel.addBill("Semester fees", feesAmt, feesDueMillis, "School", "ONE_TIME")
+                            } else if (feesAmt != null && feesDueMillis <= 0L) {
+                                // Fee-without-date used to vanish silently.
+                                android.widget.Toast.makeText(appContext, "Semester fee needs a due date — add one so the bill tracks it.", android.widget.Toast.LENGTH_LONG).show()
                             }
                             // Fare bridge: the approve-time commute matcher reads
                             // school_fare_one_way + min_transport_fare (Semester

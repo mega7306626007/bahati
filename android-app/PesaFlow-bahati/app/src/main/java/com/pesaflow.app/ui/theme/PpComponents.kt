@@ -2,6 +2,7 @@ package com.pesaflow.app.ui.theme
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,8 +40,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -264,7 +273,8 @@ enum class PpProgressKind { GOLD, SUCCESS, ERROR, INFO }
 fun PpProgress(
     fraction: Float,
     modifier: Modifier = Modifier,
-    kind: PpProgressKind = PpProgressKind.GOLD
+    kind: PpProgressKind = PpProgressKind.GOLD,
+    striped: Boolean = true
 ) {
     // Bars ease to their value — progress that moves feels alive.
     val animated by animateFloatAsState(
@@ -278,20 +288,39 @@ fun PpProgress(
         PpProgressKind.ERROR -> ppColors.error
         PpProgressKind.INFO -> ppColors.brightBlue
     }
-    Box(
+    // Barber-pole stripes: dark slashes over the fill, clipped to the
+    // rounded bar — a filling bar reads as working at a glance.
+    Canvas(
         modifier
             .fillMaxWidth()
             .height(8.dp)
             .clip(ppShapes.progress)
             .background(ppColors.border)
     ) {
-        Box(
-            Modifier
-                .fillMaxWidth(animated)
-                .height(8.dp)
-                .clip(ppShapes.progress)
-                .background(color)
-        )
+        val w = size.width * animated
+        if (w <= 0f) return@Canvas
+        val stripe = 7.dp.toPx()
+        clipPath(
+            Path().apply {
+                addRoundRect(RoundRect(Rect(Offset.Zero, size), CornerRadius(size.height / 2)))
+            }
+        ) {
+            drawRect(color = color, topLeft = Offset.Zero, size = Size(w, size.height))
+            if (striped) {
+                val dark = Color.Black.copy(alpha = 0.22f)
+                var x = -size.height
+                while (x < w + size.height) {
+                    drawLine(
+                        color = dark,
+                        start = Offset(x, size.height),
+                        end = Offset(x + size.height, 0f),
+                        strokeWidth = stripe,
+                        cap = StrokeCap.Butt
+                    )
+                    x += stripe * 2f
+                }
+            }
+        }
     }
 }
 
