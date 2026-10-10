@@ -262,12 +262,28 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
         smsGranted = granted
     }
     // Rationale-first: explain, then ask. Cold prompts get auto-denied.
+    // Permanent denial opens app Settings — re-launching the permission
+    // there is silently dropped by the OS, which used to loop forever.
     fun askSms() {
         when {
             smsPerm.status.isGranted -> smsGranted = true
             smsPerm.status.shouldShowRationale -> showSmsRationale = true
-            else -> smsPerm.launchPermissionRequest()
+            else -> try {
+                val intent = android.content.Intent(
+                    android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    android.net.Uri.parse("package:" + appContext.packageName)
+                ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                appContext.startActivity(intent)
+                android.widget.Toast.makeText(appContext, "Allow SMS access, then come back and scan.", android.widget.Toast.LENGTH_LONG).show()
+            } catch (_: Exception) {
+                smsPerm.launchPermissionRequest()
+            }
         }
+    }
+    // Re-sync on every composition: grants made in Settings (or revoked
+    // after process death) otherwise leave the button copy lying.
+    LaunchedEffect(smsPerm.status.isGranted) {
+        smsGranted = smsPerm.status.isGranted
     }
     // Statement upload: no SMS on this phone (or the inbox was wiped) →
     // upload the M-Pesa statement CSV / password-protected PDF instead. Every
@@ -932,7 +948,14 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedTextField(
                                 value = firstClassH,
-                                onValueChange = { firstClassH = it.filter { ch -> ch.isDigit() }.take(2) },
+                                // Clamp completed entries to class hours
+                                // (5–23): "99" used to pass review and die
+                                // silently at finish. Partial typing ("1")
+                                // stays editable until the second digit.
+                                onValueChange = {
+                                    val d = it.filter { ch -> ch.isDigit() }.take(2)
+                                    firstClassH = if (d.length == 2) d.toInt().coerceIn(5, 23).toString() else d
+                                },
                                 label = { Text("First (e.g. 7)") },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -940,7 +963,10 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             )
                             OutlinedTextField(
                                 value = lastClassH,
-                                onValueChange = { lastClassH = it.filter { ch -> ch.isDigit() }.take(2) },
+                                onValueChange = {
+                                    val d = it.filter { ch -> ch.isDigit() }.take(2)
+                                    lastClassH = if (d.length == 2) d.toInt().coerceIn(5, 23).toString() else d
+                                },
                                 label = { Text("Last (e.g. 17)") },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -1088,11 +1114,14 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                 askSms()
                             } else {
                                 // State stays on Main; only the inbox query drops to IO.
+                                // try/finally: a throwing scan must never stick
+                                // the button on "Scanning…" forever. Proposal
+                                // resets only on success — a failed rescan no
+                                // longer wipes evidence gathered before it.
                                 scanScope.launch {
                                     scanning = true
                                     scanProgress = 0
-                                    fareProposal = null
-                                    fareDismissed = false
+                                    try {
                                     // Streaming import count: incremented per page inside
                                     // onPage below; withContext awaits it, so the read
                                     // after this block sees the final total.
@@ -1122,6 +1151,10 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                     }
                                     // Rows already queued per page above; r.parsed below
                                     // is only reused for SIM backfill and estimates.
+                                    // Prior proposal clears here — IO succeeded,
+                                    // so a failed rescan can no longer wipe it.
+                                    fareProposal = null
+                                    fareDismissed = false
                                     // Rescans stamp SIM slots onto rows stored before tracking.
                                     viewModel.backfillSimSlots(r.parsed)
                                     scanQueued = queued
@@ -1170,7 +1203,9 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                             com.pesaflow.app.data.parsers.saveMpesaBalance(appContext, bal)
                                         }
                                     }
-                                    scanning = false
+                                    } finally {
+                                        scanning = false
+                                    }
                                 }
                             }
                         },
@@ -1182,7 +1217,9 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                     if (showStartPick) {
                         val startState = androidx.compose.material3.rememberDatePickerState()
                         androidx.compose.material3.DatePickerDialog(
-                            onDismissRequest = { showStartPick = false },
+                            // Cancel/dismiss clears the staged start too —
+                            // stale pendingStartMs used to haunt the next run.
+                            onDismissRequest = { showStartPick = false; pendingStartMs = null },
                             confirmButton = {
                                 TextButton(onClick = {
                                     pendingStartMs = startState.selectedDateMillis
@@ -1190,7 +1227,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                     if (pendingStartMs != null) showEndPick = true
                                 }) { Text("Next") }
                             },
-                            dismissButton = { TextButton(onClick = { showStartPick = false }) { Text("Cancel") } }
+                            dismissButton = { TextButton(onClick = { showStartPick = false; pendingStartMs = null }) { Text("Cancel") } }
                         ) { androidx.compose.material3.DatePicker(state = startState) }
                     }
                     if (showEndPick) {
@@ -1198,7 +1235,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             initialSelectedDateMillis = System.currentTimeMillis()
                         )
                         androidx.compose.material3.DatePickerDialog(
-                            onDismissRequest = { showEndPick = false },
+                            onDismissRequest = { showEndPick = false; pendingStartMs = null },
                             confirmButton = {
                                 TextButton(onClick = {
                                     val s = pendingStartMs
@@ -1207,12 +1244,16 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                         customStartMs = com.pesaflow.app.data.time.startOfDay(s)
                                         customEndMs = (com.pesaflow.app.data.time.startOfDay(e) + DAY_MS - 1)
                                             .coerceAtMost(System.currentTimeMillis())
+                                    } else {
+                                        // Invalid ranges used to fall back to the
+                                        // chip window in total silence.
+                                        android.widget.Toast.makeText(appContext, "End date must be after the start date.", android.widget.Toast.LENGTH_LONG).show()
                                     }
                                     pendingStartMs = null
                                     showEndPick = false
                                 }) { Text("Done") }
                             },
-                            dismissButton = { TextButton(onClick = { showEndPick = false }) { Text("Cancel") } }
+                            dismissButton = { TextButton(onClick = { showEndPick = false; pendingStartMs = null }) { Text("Cancel") } }
                         ) { androidx.compose.material3.DatePicker(state = endState) }
                     }
                     // No SMS on this phone? Upload the M-Pesa statement
@@ -1378,7 +1419,10 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                             Button(onClick = {
-                                                transportDaily = ((fare.amount * 22) / 30).toInt().toString()
+                                                // Stored == advertised: one-way morning
+                                                // fare × 2 = round-trip day (was ×22/30,
+                                                // ~0.73× — contradicting this button).
+                                                transportDaily = (fare.amount * 2).toInt().toString()
                                                 transportFromScan = true
                                                 fareDismissed = true
                                             }) { Text("Yes, ~KSh ${(fare.amount * 2).toInt()}/day") }
@@ -1597,6 +1641,11 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                     onClick = {
                         if (step == 5 && semesterStartMillis > 0L && endMillis > 0L && endMillis <= semesterStartMillis) {
                             android.widget.Toast.makeText(appContext, "Semester end must be after its start.", android.widget.Toast.LENGTH_LONG).show()
+                        } else if (step == 0 && (name.isBlank() || university.isBlank())) {
+                            // Identity is the one non-optional step: budgets,
+                            // greetings, food maps and fare hints all key off
+                            // name + university. Everything else is skippable.
+                            android.widget.Toast.makeText(appContext, "Tell us your name and university to continue — the rest is optional.", android.widget.Toast.LENGTH_LONG).show()
                         } else if (step < 5) {
                             step++
                         } else {
@@ -1638,7 +1687,9 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             }
                             // Parent fare allowance: daily or weekly rhythm feeds
                             // projections + Buddy countdowns. Weekly = daily ×5 days.
-                            transportDaily.toDoubleOrNull()?.takeIf { it > 0 && farePayer != "Me" }?.let { daily ->
+                            // Walkers never saw the fare box — stale scan-filled
+                            // figures must not seed a fare allowance for them.
+                            transportDaily.toDoubleOrNull()?.takeIf { it > 0 && farePayer != "Me" && commuteForPlanning != "Walk" }?.let { daily ->
                                 if ("PARENT" !in existingKinds) {
                                     seededIncome.add(
                                         IncomeSource(
@@ -1813,8 +1864,10 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             // ONLY when the Semester keys are still blank —
                             // anything typed there wins. Without this, fares
                             // sit uncategorized forever and budget envelopes
-                            // read zero.
-                            transportDaily.toDoubleOrNull()?.takeIf { it > 0 }?.let { roundTrip ->
+                            // read zero. Walkers skip this entirely: they never
+                            // saw the fare box, so scan-filled figures must not
+                            // become commute truth for them.
+                            transportDaily.toDoubleOrNull()?.takeIf { it > 0 && commuteForPlanning != "Walk" }?.let { roundTrip ->
                                 val farePrefs = appContext.getSharedPreferences("pesaflow_prefs", android.content.Context.MODE_PRIVATE)
                                 if (farePrefs.getString("school_fare_one_way", "").isNullOrBlank()) {
                                     val oneWay = roundTrip / 2.0
