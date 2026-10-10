@@ -63,6 +63,19 @@ class BillerDirectoryTest {
     }
 
     @Test
+    fun `home name inside a confident non-rent filing never suggests rent`() {
+        // "MASENO BOOKSHOP" filed as School: the home-name keyword fires,
+        // but the category gate keeps it out of the Rent bucket.
+        val txs = listOf(
+            Transaction(amount = 200.0, type = TransactionType.EXPENSE, category = "School", merchant = "MASENO BOOKSHOP", description = "", dateTimestamp = clock + 0),
+            Transaction(amount = 200.0, type = TransactionType.EXPENSE, category = "School", merchant = "MASENO BOOKSHOP", description = "", dateTimestamp = clock + 30 * 24L * 60 * 60 * 1000),
+            Transaction(amount = 200.0, type = TransactionType.EXPENSE, category = "School", merchant = "MASENO BOOKSHOP", description = "", dateTimestamp = clock + 60 * 24L * 60 * 60 * 1000)
+        )
+        val hits = suggestBillsFromDirectory(txs, homeNames = listOf("Maseno"))
+        assertTrue(hits.none { it.biller.displayName == "Rent" })
+    }
+
+    @Test
     fun `irregular amounts are rejected`() {
         val txs = listOf(
             tx("ZUKU", 1100.0, 0, "Paybill 320320"),

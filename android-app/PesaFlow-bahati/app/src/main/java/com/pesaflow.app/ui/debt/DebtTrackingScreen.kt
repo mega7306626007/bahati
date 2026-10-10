@@ -141,12 +141,17 @@ fun DebtTrackingScreen(viewModel: FinanceViewModel) {
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
+                        val rate = com.pesaflow.app.data.finance.dailyRateFor(fuliza.outstanding)
+                        Text(
+                            "Fuliza charges observed KSh ${fuliza.chargesObserved.toInt()} · ~1% access ≈ KSh ${fuliza.accessEstimate.toInt()} (estimate) · running ~KSh ${rate.toInt()}/day at this balance.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         val feeCtx = LocalContext.current
                         val monthFees = remember { com.pesaflow.app.data.parsers.readMonthFees(feeCtx) }
                         val lifeFees = remember(transactions) { com.pesaflow.app.data.finance.lifetimeFeeTotal(transactions) }
-                        val rate = com.pesaflow.app.data.finance.dailyRateFor(fuliza.outstanding)
                         Text(
-                            "Fuliza charges observed KSh ${fuliza.chargesObserved.toInt()} · ~1% access ≈ KSh ${fuliza.accessEstimate.toInt()} (estimate) · running ~KSh ${rate.toInt()}/day at this balance. Carrier fees: KSh ${monthFees.toInt()} this month · KSh ${lifeFees.toInt()} lifetime.",
+                            "M-Pesa carrier fees (separate from Fuliza): KSh ${monthFees.toInt()} this month · KSh ${lifeFees.toInt()} lifetime.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

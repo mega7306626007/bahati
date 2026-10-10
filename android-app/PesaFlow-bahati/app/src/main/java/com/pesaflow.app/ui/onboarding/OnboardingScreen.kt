@@ -1788,7 +1788,8 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             // school_fare_one_way + min_transport_fare (Semester
                             // screen), but most users only ever type the
                             // round-trip daily figure here. Seed one-way (half)
-                            // and a floor (half minus the ±50 rhythm tolerance)
+                            // and a floor (half minus FARE_PEAK_HEADROOM — the
+                            // same headroom fareBand uses, not a second copy)
                             // ONLY when the Semester keys are still blank —
                             // anything typed there wins. Without this, fares
                             // sit uncategorized forever and budget envelopes
@@ -1798,7 +1799,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                 if (farePrefs.getString("school_fare_one_way", "").isNullOrBlank()) {
                                     val oneWay = roundTrip / 2.0
                                     val edit = farePrefs.edit().putString("school_fare_one_way", oneWay.toString())
-                                    val floor = (oneWay - 50.0).takeIf { it > 0 }
+                                    val floor = (oneWay - com.pesaflow.app.data.schedule.FARE_PEAK_HEADROOM).takeIf { it > 0 }
                                     if (floor != null) edit.putString("min_transport_fare", floor.toString())
                                     edit.apply()
                                 }

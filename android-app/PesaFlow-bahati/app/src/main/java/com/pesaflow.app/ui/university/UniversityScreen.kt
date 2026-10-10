@@ -543,8 +543,8 @@ fun UniversityFinancialPlanner(
                     }.sumOf { it.amount }
                     val helbRemaining = helbExp - spentSinceStart
                     UniversityInfoRow(
-                        label = "HELB remaining",
-                        value = "KSh " + helbRemaining.toInt() + " of KSh " + helbExp.toInt() + " (KSh " + spentSinceStart.toInt() + " spent)",
+                        label = "Term burn vs HELB",
+                        value = "KSh " + helbRemaining.toInt() + " of KSh " + helbExp.toInt() + " if every shilling spent came from HELB (KSh " + spentSinceStart.toInt() + " spent from all pockets)",
                         color = if (helbRemaining >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                     )
                     val afterFees = helbExp - feesAmt

@@ -207,14 +207,43 @@ fun InsightsScreen(viewModel: FinanceViewModel, onNameMerchant: (String) -> Unit
                             title = "Velocity trend",
                             subtitle = "Daily spend, oldest → newest (equal days, no fake spikes)"
                         )
+                        var showCustomDays by remember { mutableStateOf(false) }
+                        var customDaysText by remember { mutableStateOf("") }
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(7, 14, 30).forEach { d ->
                                 FilterChip(
-                                    selected = velocityDays == d,
-                                    onClick = { velocityDays = d },
+                                    selected = !showCustomDays && velocityDays == d,
+                                    onClick = { showCustomDays = false; velocityDays = d },
                                     label = { Text("$d days") }
                                 )
                             }
+                            FilterChip(
+                                selected = showCustomDays,
+                                onClick = { customDaysText = velocityDays.toString(); showCustomDays = true },
+                                label = { Text(if (velocityDays in listOf(7, 14, 30)) "Custom" else "$velocityDays days ✎") }
+                            )
+                        }
+                        if (showCustomDays) {
+                            AlertDialog(
+                                onDismissRequest = { showCustomDays = false },
+                                title = { Text("Custom window") },
+                                text = {
+                                    OutlinedTextField(
+                                        value = customDaysText,
+                                        onValueChange = { customDaysText = it.filter { c -> c.isDigit() }.take(2) },
+                                        label = { Text("Days back (1–90)") },
+                                        singleLine = true,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                },
+                                confirmButton = {
+                                    TextButton(onClick = {
+                                        customDaysText.toIntOrNull()?.takeIf { it in 1..90 }?.let { velocityDays = it }
+                                        showCustomDays = false
+                                    }) { Text("Apply") }
+                                },
+                                dismissButton = { TextButton(onClick = { showCustomDays = false }) { Text("Cancel") } }
+                            )
                         }
                         val linePoints = remember(transactions, velocityDays) {
                             com.pesaflow.app.ui.analytics.dailySpendSeries(transactions, velocityDays)
@@ -244,7 +273,7 @@ fun InsightsScreen(viewModel: FinanceViewModel, onNameMerchant: (String) -> Unit
                                 .mapValues { (_, rows) -> rows.sumOf { it.amount } to rows.size }
                         }
                         if (simSpend.isEmpty()) {
-                            Text("No dual-SIM transactions yet — approve M-Pesa rows to see per-line spend.", style = com.pesaflow.app.ui.theme.ppTypography.bodySmall, color = com.pesaflow.app.ui.theme.ppColors.textTertiary)
+                            Text("No SIM-tagged rows yet. SIM tags come from SMS scans (needs SMS permission at onboarding) — statement/CSV imports carry no SIM info. Scan M-Pesa texts and each line reports separately here.", style = com.pesaflow.app.ui.theme.ppTypography.bodySmall, color = com.pesaflow.app.ui.theme.ppColors.textTertiary)
                         } else {
                             val totalSim = simSpend.values.sumOf { it.first }
                             simSpend.toSortedMap().forEach { (slot, pair) ->

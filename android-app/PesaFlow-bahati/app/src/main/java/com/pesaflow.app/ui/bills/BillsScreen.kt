@@ -47,13 +47,6 @@ fun BillsScreen(viewModel: FinanceViewModel) {
         acked = acked + key
         ackScope.launch { kotlinx.coroutines.delay(2000); acked = acked - key }
     }
-    // Single repeats computation (was duplicated with a shadow warning):
-    // detected rhythms minus names already tracked as open bills.
-    val repeats = remember(transactions, bills) {
-        detectRepeats(transactions).filter { hit ->
-            bills.none { it.status != "PAID" && it.name.equals(hit.label, ignoreCase = true) }
-        }.take(5)
-    }
     // Directory-first bill suggestions: known Kenyan billers (paybills, ISPs,
     // utilities) matched against the ledger with evidence — never "any name
     // you paid three times". Home/campus names feed rent matching.
@@ -62,6 +55,19 @@ fun BillsScreen(viewModel: FinanceViewModel) {
         val homes = listOfNotNull(profile?.campus, profile?.universityName)
         com.pesaflow.app.data.finance.suggestBillsFromDirectory(transactions, homes).filter { hit ->
             bills.none { it.status != "PAID" && it.name.equals(hit.biller.displayName, ignoreCase = true) }
+        }.take(5)
+    }
+    // Single repeats computation (was duplicated with a shadow warning):
+    // detected rhythms minus names already tracked as open bills AND minus
+    // merchants the directory card already covers — one merchant, one card,
+    // never the same face under two framings with two + Bill buttons.
+    val repeats = remember(transactions, bills, dirHits) {
+        detectRepeats(transactions).filter { hit ->
+            bills.none { it.status != "PAID" && it.name.equals(hit.label, ignoreCase = true) } &&
+                dirHits.none { d ->
+                    hit.label.contains(d.biller.displayName, ignoreCase = true) ||
+                        d.biller.displayName.contains(hit.label, ignoreCase = true)
+                }
         }.take(5)
     }
 

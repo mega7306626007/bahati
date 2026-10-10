@@ -39,13 +39,17 @@ fun matchesDeclaredCommuteFare(
         kotlin.math.abs(amount - oneWayFare) <= tolerance &&
         isWithinClassCommuteWindow(timestamp, classTimes)
 
-// Fare band with a user-set floor: peak hikes run hot (+50), but nothing
-// below the minimum fare ever reads as this ride (−10 default, or the
-// user's own minimum). Fixed ±50 swallowed cheap fares whole.
+// Peak-hike headroom shared by the matcher AND the onboarding fare
+// bridge: one number, one meaning — change it here and both follow.
+const val FARE_PEAK_HEADROOM = 50.0
+
+// Fare band with a user-set floor: peak hikes run hot (+headroom), but
+// nothing below the minimum fare ever reads as this ride (−10 default,
+// or the user's own minimum). Fixed ±50 swallowed cheap fares whole.
 fun fareBand(oneWayFare: Double, minFare: Double = 0.0): ClosedRange<Double> {
     if (oneWayFare <= 0) return 0.0..0.0
     val lo = (if (minFare > 0) minFare else oneWayFare - 10.0).coerceAtLeast(1.0)
-    return lo..(oneWayFare + 50.0)
+    return lo..(oneWayFare + FARE_PEAK_HEADROOM)
 }
 
 // Trip windows from the timetable plus commute durations: the TO trip
