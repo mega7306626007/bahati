@@ -61,19 +61,20 @@ fun HomeQuickActions(
     pendingCount: Int,
     scanning: Boolean,
     onScanToday: () -> Unit,
-    onReviewPending: () -> Unit
+    onReviewPending: () -> Unit,
+    lang: com.pesaflow.app.data.models.AppLanguage = com.pesaflow.app.data.models.AppLanguage.ENGLISH
 ) {
     // Scan-only: money enters through SMS scans and statement imports, never
     // typed forms. Scan fills Pending below; review confirms it to the ledger.
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ppSpacing.md)) {
         PpQuickAction(
-            label = if (scanning) "Scanning…" else "Scan today",
+            label = if (scanning) com.pesaflow.app.ui.language.dashT("scanning", lang) else com.pesaflow.app.ui.language.dashT("scan_today", lang),
             icon = Icons.Filled.Search,
             onClick = onScanToday,
             modifier = Modifier.weight(1f)
         )
         PpQuickAction(
-            label = if (pendingCount > 0) "Pending ($pendingCount)" else "Pending",
+            label = com.pesaflow.app.ui.language.dashT("pending_btn", lang, if (pendingCount > 0) pendingCount.toString() else ""),
             icon = Icons.Filled.Notifications,
             onClick = onReviewPending,
             modifier = Modifier.weight(1f)

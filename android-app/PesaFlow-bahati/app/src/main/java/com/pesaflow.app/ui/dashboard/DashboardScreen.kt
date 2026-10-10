@@ -172,14 +172,14 @@ fun DashboardScreen(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                title = { Text("PesaPlanner Hub ⚡", fontWeight = FontWeight.Bold) },
+                title = { Text(com.pesaflow.app.ui.language.dashT("hub_title", currentLanguage), fontWeight = FontWeight.Bold) },
                 actions = {
-                    TextButton(onClick = { showCustomize = true }) { Text("Tune") }
+                    TextButton(onClick = { showCustomize = true }) { Text(com.pesaflow.app.ui.language.dashT("tune", currentLanguage)) }
                     TextButton(onClick = { viewModel.setHideBalances(!hideBalances) }) {
-                        Text(if (hideBalances) "Show" else "Hide")
+                        Text(if (hideBalances) com.pesaflow.app.ui.language.dashT("show", currentLanguage) else com.pesaflow.app.ui.language.dashT("hide", currentLanguage))
                     }
                     IconButton(onClick = { onNavigate(NavRoutes.SEARCH) }) {
-                        Icon(Icons.Filled.Search, contentDescription = "Search transactions", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Filled.Search, contentDescription = com.pesaflow.app.ui.language.dashT("search_cd", currentLanguage), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Text(
                         when (currentLanguage) {
@@ -341,14 +341,14 @@ fun DashboardScreen(
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         val top = snap2.obligations.firstOrNull()
                         if (top == null && snap2.upcomingFees.toDouble() <= 0) {
-                            Text("No upcoming pressure.", style = MaterialTheme.typography.bodyMedium)
+                            Text(com.pesaflow.app.ui.language.dashT("no_pressure", currentLanguage), style = MaterialTheme.typography.bodyMedium)
                         } else {
                             if (top != null) {
                                 val when_ = when {
-                                    top.overdue -> "overdue"
-                                    top.dueInDays <= 0 -> "due today"
-                                    top.dueInDays == 1 -> "due tomorrow"
-                                    else -> "due in ${top.dueInDays} days"
+                                    top.overdue -> com.pesaflow.app.ui.language.dashT("overdue", currentLanguage)
+                                    top.dueInDays <= 0 -> com.pesaflow.app.ui.language.dashT("due_today", currentLanguage)
+                                    top.dueInDays == 1 -> com.pesaflow.app.ui.language.dashT("due_tomorrow", currentLanguage)
+                                    else -> com.pesaflow.app.ui.language.dashT("due_in_days", currentLanguage, top.dueInDays.toString())
                                 }
                                 Text(
                                     "${top.name} — ${fmt.compact(top.remaining)} ($when_)",
@@ -357,13 +357,13 @@ fun DashboardScreen(
                                 )
                                 val rest = snap2.obligations.size - 1
                                 if (rest > 0) Text(
-                                    "+ $rest more obligation${if (rest == 1) "" else "s"}",
+                                    com.pesaflow.app.ui.language.dashT("more_obligations", currentLanguage, rest.toString()),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             if (snap2.upcomingFees.toDouble() > 0) Text(
-                                "Semester fees outstanding: ${fmt.compact(snap2.upcomingFees)} (User entered)",
+                                com.pesaflow.app.ui.language.dashT("sem_fees_out", currentLanguage, fmt.compact(snap2.upcomingFees)),
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
@@ -374,7 +374,7 @@ fun DashboardScreen(
             // NEXT — exactly one useful action, by priority. Never a feed.
             item {
                 val snap3 by viewModel.financialSnapshot.collectAsState()
-                PpSectionHeader(title = "Next")
+                PpSectionHeader(title = com.pesaflow.app.ui.language.dashT("next_title", currentLanguage))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -383,21 +383,21 @@ fun DashboardScreen(
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         when {
                             snap3.liquid.toDouble() < 0 -> {
-                                Text("Reconcile your current balance.", style = MaterialTheme.typography.bodyMedium)
-                                TextButton(onClick = { onNavigate(NavRoutes.TRANSACTIONS) }) { Text("Review ledger →") }
+                                Text(com.pesaflow.app.ui.language.dashT("next_reconcile", currentLanguage), style = MaterialTheme.typography.bodyMedium)
+                                TextButton(onClick = { onNavigate(NavRoutes.TRANSACTIONS) }) { Text(com.pesaflow.app.ui.language.dashT("review_ledger_btn", currentLanguage)) }
                             }
                             pendingTransactions.isNotEmpty() -> {
-                                Text("Review ${pendingTransactions.size} confirming transaction${if (pendingTransactions.size == 1) "" else "s"} below.", style = MaterialTheme.typography.bodyMedium)
+                                Text(com.pesaflow.app.ui.language.dashT("next_review_pending", currentLanguage, pendingTransactions.size.toString()), style = MaterialTheme.typography.bodyMedium)
                             }
                             budgets.isEmpty() -> {
-                                Text("Create your first budget.", style = MaterialTheme.typography.bodyMedium)
-                                TextButton(onClick = { onNavigate(NavRoutes.BUDGETS) }) { Text("Set a budget →") }
+                                Text(com.pesaflow.app.ui.language.dashT("next_budget", currentLanguage), style = MaterialTheme.typography.bodyMedium)
+                                TextButton(onClick = { onNavigate(NavRoutes.BUDGETS) }) { Text(com.pesaflow.app.ui.language.dashT("set_budget_btn", currentLanguage)) }
                             }
                             (profile?.feesAmount ?: 0.0) <= 0 -> {
-                                Text("Add your semester fee.", style = MaterialTheme.typography.bodyMedium)
-                                TextButton(onClick = { onNavigate(NavRoutes.UNIVERSITY) }) { Text("University →") }
+                                Text(com.pesaflow.app.ui.language.dashT("next_fees", currentLanguage), style = MaterialTheme.typography.bodyMedium)
+                                TextButton(onClick = { onNavigate(NavRoutes.UNIVERSITY) }) { Text(com.pesaflow.app.ui.language.dashT("university_btn", currentLanguage)) }
                             }
-                            else -> Text("Nothing urgent — you're up to date.", style = MaterialTheme.typography.bodyMedium)
+                            else -> Text(com.pesaflow.app.ui.language.dashT("next_calm", currentLanguage), style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                 }
@@ -411,6 +411,7 @@ fun DashboardScreen(
                 HomeQuickActions(
                     pendingCount = pendingTransactions.size,
                     scanning = homeScanning,
+                    lang = currentLanguage,
                     onScanToday = {
                         homeScanning = true
                         viewModel.scanInboxDays(
@@ -420,16 +421,16 @@ fun DashboardScreen(
                                 homeScanning = false
                                 scope.launch {
                                     snackbar.showSnackbar(
-                                        if (error != null) "Scan failed: $error"
-                                        else "Scanned $found texts: $queued new for review." +
-                                            (if (feeTotal > 0) " KSh ${feeTotal.toInt()} fees." else "") + " ✅",
+                                        if (error != null) com.pesaflow.app.ui.language.dashT("scan_fail", currentLanguage, error)
+                                        else com.pesaflow.app.ui.language.dashT("scanned", currentLanguage, found.toString(), queued.toString()) +
+                                            (if (feeTotal > 0) com.pesaflow.app.ui.language.dashT("scan_fees", currentLanguage, feeTotal.toInt().toString()) else "") + " ✅",
                                         duration = SnackbarDuration.Short
                                     )
                                 }
                             }
                         )
                     },
-                    onReviewPending = {
+                        onReviewPending = {
                         val dashPrefs = dashCtx.getSharedPreferences("pesaflow_prefs", android.content.Context.MODE_PRIVATE)
                         val sureNow = pendingTransactions.filter {
                             com.pesaflow.app.data.ledger.ConfidenceMemory.effective(
@@ -440,8 +441,8 @@ fun DashboardScreen(
                         if (sureNow.isNotEmpty()) viewModel.approveAllPending(sureNow)
                         else scope.launch {
                             snackbar.showSnackbar(
-                                if (pendingTransactions.isEmpty()) "Nothing waiting — scan to fill the queue."
-                                else "Confirm each row below to log it. 👇",
+                                if (pendingTransactions.isEmpty()) com.pesaflow.app.ui.language.dashT("nothing_waiting", currentLanguage)
+                                else com.pesaflow.app.ui.language.dashT("confirm_each", currentLanguage),
                                 duration = SnackbarDuration.Short
                             )
                         }
@@ -464,9 +465,9 @@ fun DashboardScreen(
                         FilterChip(
                             selected = ledgerFilter == null,
                             onClick = { ledgerFilter = null },
-                            label = { Text("All") }
+                            label = { Text(com.pesaflow.app.ui.language.dashT("f_all", currentLanguage)) }
                         )
-                        listOf("INCOME" to "Income", "EXPENSE" to "Expenses", "SAVING" to "Savings", "INVESTMENT" to "Investments").forEach { (v, label) ->
+                        listOf("INCOME" to com.pesaflow.app.ui.language.dashT("f_income", currentLanguage), "EXPENSE" to com.pesaflow.app.ui.language.dashT("f_expenses", currentLanguage), "SAVING" to com.pesaflow.app.ui.language.dashT("f_saving", currentLanguage), "INVESTMENT" to com.pesaflow.app.ui.language.dashT("f_investment", currentLanguage)).forEach { (v, label) ->
                             FilterChip(
                                 selected = ledgerFilter == v,
                                 onClick = { ledgerFilter = if (ledgerFilter == v) null else v },
@@ -489,13 +490,13 @@ fun DashboardScreen(
                         }
                         if (pendingTransactions.isNotEmpty()) {
                             PesaEmptyState(
-                                title = "${pendingTransactions.size} waiting in Pending",
-                                explanation = "Your scan found them — confirm and they land here as transactions.",
-                                actionLabel = if (emptySure.isNotEmpty()) "Confirm ${emptySure.size} sure" else "Review pending",
+                                title = com.pesaflow.app.ui.language.dashT("waiting_in_pending", currentLanguage, pendingTransactions.size.toString()),
+                                explanation = com.pesaflow.app.ui.language.dashT("scan_found", currentLanguage),
+                                actionLabel = if (emptySure.isNotEmpty()) com.pesaflow.app.ui.language.dashT("confirm_sure_btn", currentLanguage, emptySure.size.toString()) else com.pesaflow.app.ui.language.dashT("review_pending_btn", currentLanguage),
                                 onAction = {
                                     if (emptySure.isNotEmpty()) viewModel.approveAllPending(emptySure)
                                     else scope.launch {
-                                        snackbar.showSnackbar("Scroll to Pending 🔔 below and confirm each row.", duration = SnackbarDuration.Short)
+                                        snackbar.showSnackbar(com.pesaflow.app.ui.language.dashT("scroll_pending", currentLanguage), duration = SnackbarDuration.Short)
                                     }
                                 }
                             )
@@ -695,11 +696,11 @@ fun DashboardScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Money positions", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        Text(com.pesaflow.app.ui.language.dashT("money_positions", currentLanguage), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Ledger", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(com.pesaflow.app.ui.language.dashT("ledger", currentLanguage), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(
                                     if (hideBalances) "KSh ••••" else availableBalance.toKSh(),
                                     style = MaterialTheme.typography.titleMedium,
@@ -708,7 +709,7 @@ fun DashboardScreen(
                                 )
                             }
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("M-Pesa wallet", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(com.pesaflow.app.ui.language.dashT("mpesa_wallet", currentLanguage), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(
                                     if (hideBalances) "KSh ••••"
                                     else wallet?.let { "KSh ${it.first.toInt()}" } ?: "—",
@@ -719,8 +720,8 @@ fun DashboardScreen(
                             }
                         }
                         Text(
-                            wallet?.let { "Wallet read " + com.pesaflow.app.data.parsers.balanceAgeText(it.second, System.currentTimeMillis()) + " · wallet is M-Pesa only, ledger covers everything." }
-                                ?: "No wallet reading yet — first M-Pesa text sets it.",
+                            wallet?.let { com.pesaflow.app.ui.language.dashT("wallet_read", currentLanguage, com.pesaflow.app.data.parsers.balanceAgeText(it.second, System.currentTimeMillis())) }
+                                ?: com.pesaflow.app.ui.language.dashT("wallet_none", currentLanguage),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -728,7 +729,7 @@ fun DashboardScreen(
                         // Per-method split: which pocket holds the money.
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("M-Pesa", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(com.pesaflow.app.ui.language.dashT("mpesa", currentLanguage), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(
                                     if (hideBalances) "KSh ••••" else "KSh ${mpesaBal.toInt()}",
                                     style = MaterialTheme.typography.bodyMedium,
@@ -737,7 +738,7 @@ fun DashboardScreen(
                                 )
                             }
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Cash", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(com.pesaflow.app.ui.language.dashT("cash", currentLanguage), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(
                                     if (hideBalances) "KSh ••••" else "KSh ${cashBal.toInt()}",
                                     style = MaterialTheme.typography.bodyMedium,
@@ -746,7 +747,7 @@ fun DashboardScreen(
                                 )
                             }
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Bank", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(com.pesaflow.app.ui.language.dashT("bank", currentLanguage), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(
                                     if (hideBalances) "KSh ••••" else "KSh ${bankBal.toInt()}",
                                     style = MaterialTheme.typography.bodyMedium,
@@ -765,8 +766,11 @@ fun DashboardScreen(
                         if (!hideBalances && (pendingIn > 0 || pendingOut > 0)) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                "Spendable now: KSh ${com.pesaflow.app.data.money.spendableNow(availableBalance, pendingIn, pendingOut).toInt()} " +
-                                    "(ledger ± ${pendingTransactions.size} confirming)",
+                                com.pesaflow.app.ui.language.dashT(
+                                    "spendable", currentLanguage,
+                                    com.pesaflow.app.data.money.spendableNow(availableBalance, pendingIn, pendingOut).toInt().toString(),
+                                    pendingTransactions.size.toString()
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.primary
@@ -776,14 +780,10 @@ fun DashboardScreen(
                         if (!hideBalances && availableBalance < 0) {
                             Spacer(modifier = Modifier.height(4.dp))
                             ExplainChip(
-                                label = "Why is this negative?",
-                                body = "Your recorded transactions show more money leaving than entering. " +
-                                    "This can happen if your opening balance was not recorded, income is missing, " +
-                                    "a transaction was duplicated, or a transfer was recorded incorrectly. " +
-                                    "PesaFlow will never change your ledger by itself — review it and reconcile " +
-                                    "only what you confirm."
+                                label = com.pesaflow.app.ui.language.dashT("why_negative", currentLanguage),
+                                body = com.pesaflow.app.ui.language.dashT("why_negative_body", currentLanguage)
                             )
-                            TextButton(onClick = { onNavigate(NavRoutes.TRANSACTIONS) }) { Text("Review ledger →") }
+                            TextButton(onClick = { onNavigate(NavRoutes.TRANSACTIONS) }) { Text(com.pesaflow.app.ui.language.dashT("review_ledger_btn", currentLanguage)) }
                         }
                         // Drift check: ledger's M-Pesa pocket vs the last SMS
                         // reading, in tolerance zones. Small gaps get a gentle
@@ -1132,7 +1132,7 @@ fun DashboardScreen(
                         viewModel.transportCandidates(pendingTransactions)
                     }
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("Pending (${pendingTransactions.size}) 🔔", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Text(com.pesaflow.app.ui.language.dashT("pending_title", currentLanguage, pendingTransactions.size.toString()), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         // Scrollable actions: "Remove duplicates + Confirm all
                         // sure (225) + View all" crushed into one row on narrow
                         // screens, stretching button text off-screen.
@@ -1147,32 +1147,32 @@ fun DashboardScreen(
                                         val n = viewModel.removeDuplicatePending()
                                         snackbar.currentSnackbarData?.dismiss()
                                         snackbar.showSnackbar(
-                                            if (n == 0) "No duplicates — queue is clean."
-                                            else "$n duplicate${if (n == 1) "" else "s"} removed.",
+                                            if (n == 0) com.pesaflow.app.ui.language.dashT("no_dupes", currentLanguage)
+                                            else com.pesaflow.app.ui.language.dashT("dupes_removed", currentLanguage, n.toString()),
                                             duration = SnackbarDuration.Short
                                         )
                                     }
-                                }) { Text("Remove duplicates") }
+                                }) { Text(com.pesaflow.app.ui.language.dashT("remove_dupes", currentLanguage)) }
                             }
                             if (sureRows.isNotEmpty()) {
                                 TextButton(onClick = {
                                     viewModel.approveAllPending(sureRows)
                                     scope.launch {
                                         snackbar.currentSnackbarData?.dismiss()
-                                        val r = snackbar.showSnackbar("${sureRows.size} confirmed — history vouched.", "Undo", withDismissAction = true, duration = SnackbarDuration.Short)
+                                        val r = snackbar.showSnackbar(com.pesaflow.app.ui.language.dashT("sure_confirmed", currentLanguage, sureRows.size.toString()), com.pesaflow.app.ui.language.dashT("undo_btn", currentLanguage), withDismissAction = true, duration = SnackbarDuration.Short)
                                         if (r == SnackbarResult.ActionPerformed) viewModel.undoLast()
                                     }
-                                }) { Text("Confirm all sure (${sureRows.size})") }
+                                }) { Text(com.pesaflow.app.ui.language.dashT("confirm_all_sure", currentLanguage, sureRows.size.toString())) }
                             }
                             if (categorizedRows.isNotEmpty()) {
                                 TextButton(onClick = {
                                     viewModel.approveAllPending(categorizedRows)
                                     scope.launch {
                                         snackbar.currentSnackbarData?.dismiss()
-                                        val r = snackbar.showSnackbar("${categorizedRows.size} confirmed — only uncategorized left.", "Undo", withDismissAction = true, duration = SnackbarDuration.Short)
+                                        val r = snackbar.showSnackbar(com.pesaflow.app.ui.language.dashT("categorized_left", currentLanguage, categorizedRows.size.toString()), com.pesaflow.app.ui.language.dashT("undo_btn", currentLanguage), withDismissAction = true, duration = SnackbarDuration.Short)
                                         if (r == SnackbarResult.ActionPerformed) viewModel.undoLast()
                                     }
-                                }) { Text("Confirm categorized (${categorizedRows.size})") }
+                                }) { Text(com.pesaflow.app.ui.language.dashT("confirm_categorized", currentLanguage, categorizedRows.size.toString())) }
                             }
                             if (transportRows.isNotEmpty()) {
                                 TextButton(onClick = {
@@ -1181,16 +1181,16 @@ fun DashboardScreen(
                                     scope.launch {
                                         snackbar.currentSnackbarData?.dismiss()
                                         val r = snackbar.showSnackbar(
-                                            "${transportRows.size} rides filed as Transport" +
-                                                if (added > 0) " · $added name${if (added == 1) "" else "s"} saved to the Transport card 🚌" else " · names already on the Transport card 🚌",
-                                            "Undo", withDismissAction = true, duration = SnackbarDuration.Short
+                                            com.pesaflow.app.ui.language.dashT("transport_filed", currentLanguage, transportRows.size.toString()) +
+                                                if (added > 0) com.pesaflow.app.ui.language.dashT("transport_names", currentLanguage, added.toString()) else com.pesaflow.app.ui.language.dashT("transport_known", currentLanguage),
+                                            com.pesaflow.app.ui.language.dashT("undo_btn", currentLanguage), withDismissAction = true, duration = SnackbarDuration.Short
                                         )
                                         if (r == SnackbarResult.ActionPerformed) viewModel.undoLast()
                                     }
-                                }) { Text("File transport (${transportRows.size}) 🚌") }
+                                }) { Text(com.pesaflow.app.ui.language.dashT("file_transport", currentLanguage, transportRows.size.toString())) }
                             }
                             TextButton(onClick = { showAllPending = !showAllPending }) {
-                                Text(if (showAllPending) "Less" else "View all")
+                                Text(if (showAllPending) com.pesaflow.app.ui.language.dashT("less", currentLanguage) else com.pesaflow.app.ui.language.dashT("view_all", currentLanguage))
                             }
                         }
                     }
@@ -1211,7 +1211,7 @@ fun DashboardScreen(
                     fun snack(msg: String) {
                         scope.launch {
                             snackbar.currentSnackbarData?.dismiss()
-                            val r = snackbar.showSnackbar(msg, "Undo", withDismissAction = true, duration = SnackbarDuration.Short)
+                            val r = snackbar.showSnackbar(msg, com.pesaflow.app.ui.language.dashT("undo_btn", currentLanguage), withDismissAction = true, duration = SnackbarDuration.Short)
                             if (r == SnackbarResult.ActionPerformed) viewModel.undoLast()
                         }
                     }
@@ -1222,12 +1222,12 @@ fun DashboardScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("New SMS Detected", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Text(com.pesaflow.app.ui.language.dashT("new_sms", currentLanguage), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                 Text("KSh ${pending.amount}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             }
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text("Merchant: ${pending.merchant}", style = MaterialTheme.typography.bodyMedium)
-                            Text("Suggested Category: ${pending.category}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(com.pesaflow.app.ui.language.dashT("merchant", currentLanguage, pending.merchant), style = MaterialTheme.typography.bodyMedium)
+                            Text(com.pesaflow.app.ui.language.dashT("suggested_cat", currentLanguage, pending.category), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             // Dual-SIM provenance: which line the money arrived on.
                             if (pending.simSlot >= 0) {
                                 Text(
@@ -1242,14 +1242,14 @@ fun DashboardScreen(
                                 com.pesaflow.app.data.ledger.ConfidenceMemory.effective(calPrefs, pending.merchant, pending.confidenceScore)
                             }
                             if (effConf >= 0.85f) {
-                                Text("✓ Sure — matches your history (${(effConf * 100).toInt()}%).", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                                Text(com.pesaflow.app.ui.language.dashT("sure_badge", currentLanguage, (effConf * 100).toInt().toString()), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                             } else if (pending.confidenceScore < 0.75f) {
-                                Text("⚠️ ${(pending.confidenceScore * 100).toInt()}% sure — check category and type before confirming.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+                                Text(com.pesaflow.app.ui.language.dashT("unsure_badge", currentLanguage, (pending.confidenceScore * 100).toInt().toString()), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
                             }
                             OutlinedTextField(
                                 value = editCat,
                                 onValueChange = { editCat = it },
-                                label = { Text("Confirm as category") },
+                                label = { Text(com.pesaflow.app.ui.language.dashT("confirm_as_cat", currentLanguage)) },
                                 modifier = Modifier.fillMaxWidth()
                             )
                             // Tap-to-pick: learned + inferred categories as chips so
@@ -1284,14 +1284,14 @@ fun DashboardScreen(
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                 TextButton(onClick = {
                                     viewModel.rejectPending(pending)
-                                    snack("Ignored — pending removed.")
-                                }) { Text("Ignore", color = MaterialTheme.colorScheme.error) }
+                                    snack(com.pesaflow.app.ui.language.dashT("ignored_msg", currentLanguage))
+                                }) { Text(com.pesaflow.app.ui.language.dashT("ignore", currentLanguage), color = MaterialTheme.colorScheme.error) }
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Button(onClick = {
                                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                     viewModel.approvePending(pending, editCat.ifBlank { pending.category }, editType)
-                                    snack("Saved to ledger.")
-                                }) { Text("Confirm") }
+                                    snack(com.pesaflow.app.ui.language.dashT("saved_msg", currentLanguage))
+                                }) { Text(com.pesaflow.app.ui.language.dashT("confirm_btn", currentLanguage)) }
                             }
                         }
                     }
