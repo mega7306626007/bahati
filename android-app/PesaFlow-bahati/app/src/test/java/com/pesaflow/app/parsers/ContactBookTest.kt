@@ -133,6 +133,42 @@ class ContactBookTest {
     }
 
     @Test
+    fun `match terms tally into the card without one contact per name`() {
+        // The Transport card: one entry, operator names as match terms.
+        // Rows from any listed operator tally into it.
+        val p = FakePrefs()
+        assertTrue(
+            ContactBook.save(
+                p, "Transport", "Transport · rides", "Business", "Transport",
+                "OUT", "Auto-collected ride names", "Super Metro, Ena Coach"
+            )
+        )
+        ContactBook.recordTransaction(p, "SUPER METRO", TransactionType.EXPENSE, 80.0, 1000L)
+        ContactBook.recordTransaction(p, "ENA COACH", TransactionType.EXPENSE, 1500.0, 2000L)
+        ContactBook.recordTransaction(p, "NAIVAS", TransactionType.EXPENSE, 500.0, 3000L)
+        val card = ContactBook.readAll(p).first { it.name == "transport" }
+        assertEquals(2, card.transactionCount)
+        assertEquals(1580.0, card.totalOut, 0.001)
+    }
+
+    @Test
+    fun `match terms never steal near-miss merchants`() {
+        val p = FakePrefs()
+        assertTrue(
+            ContactBook.save(
+                p, "Transport", "Transport · rides", "Business", "Transport",
+                "OUT", "", "Rog, Zuri"
+            )
+        )
+        // Whole-word terms: "Rogue Salon" and "Missouri" stay out.
+        ContactBook.recordTransaction(p, "Rogue Salon", TransactionType.EXPENSE, 300.0, 1000L)
+        ContactBook.recordTransaction(p, "ROG SACCO", TransactionType.EXPENSE, 60.0, 2000L)
+        val card = ContactBook.readAll(p).first { it.name == "transport" }
+        assertEquals(1, card.transactionCount)
+        assertEquals(60.0, card.totalOut, 0.001)
+    }
+
+    @Test
     fun `legacy two-entry book recovers both contacts with no ghost`() {
         // Exactly what the old pipe writer persisted for two onboarding
         // contacts with empty notes: entry lines joined with "||".

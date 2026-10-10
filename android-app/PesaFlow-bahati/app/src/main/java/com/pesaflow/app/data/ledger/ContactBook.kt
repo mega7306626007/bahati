@@ -179,8 +179,18 @@ object ContactBook {
 
     // Whole-word match: "Nancy" tallies "NANCY WANJIKU" but never "Nancys".
     // Same rule hasContactMemory uses, so stats and categorization agree.
-    internal fun matchesContact(merchant: String, contactName: String): Boolean {
-        val norm = normalizeContact(contactName)
+    // Match terms count too: every name on the Transport card tallies into
+    // it, so per-operator spend accumulates without one contact per SACCO.
+    internal fun matchesContact(merchant: String, contactName: String): Boolean =
+        matchesContact(merchant, ContactEntry(name = contactName, displayName = contactName))
+
+    internal fun matchesContact(merchant: String, contact: ContactEntry): Boolean {
+        if (matchesName(merchant, contact.name)) return true
+        return splitUserList(contact.matchTerms).any { matchesName(merchant, it) }
+    }
+
+    private fun matchesName(merchant: String, term: String): Boolean {
+        val norm = normalizeContact(term)
         if (norm.isEmpty()) return false
         if (normalizeContact(merchant) == norm) return true
         return Regex(
@@ -198,7 +208,7 @@ object ContactBook {
         var touched = false
         all.indices.forEach { i ->
             val old = all[i]
-            if (!matchesContact(merchant, old.name)) return@forEach
+            if (!matchesContact(merchant, old)) return@forEach
             all[i] = old.copy(
                 transactionCount = old.transactionCount + 1,
                 lastSeen = maxOf(old.lastSeen, ts),
@@ -221,7 +231,7 @@ object ContactBook {
             if (tx.amount <= 0 || !tx.amount.isFinite() || tx.merchant.isBlank()) continue
             for (i in zeroed.indices) {
                 val old = zeroed[i]
-                if (!matchesContact(tx.merchant, old.name)) continue
+                if (!matchesContact(tx.merchant, old)) continue
                 zeroed[i] = old.copy(
                     transactionCount = old.transactionCount + 1,
                     lastSeen = maxOf(old.lastSeen, tx.dateTimestamp),

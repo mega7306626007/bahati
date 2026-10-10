@@ -1714,7 +1714,9 @@ object MpesaParser {
             lower = lower.replace("ziidi", " ").trim().replace(Regex("\\s+"), " ")
         }
         if (lower.contains("m-shwari") || lower.contains("mshwari")) return "Savings"
-        if (lower.contains("sacco")) return "Savings"
+        // Named matatu SACCOs beat the savings rule: "SUPER METRO SACCO"
+        // is a bus, "my chama sacco" is savings. Operator check first.
+        if (lower.contains("sacco") && !com.pesaflow.app.data.finance.isTransportOperator(lower)) return "Savings"
         if (lower.contains("loan") || lower.contains("tala") || lower.contains("branch") || lower.contains("zenka") || lower.contains("mkopa") || lower.contains("m-kopa") || lower.contains("hustler") || lower.contains("737737")) return "Debt"
         // HELB upkeep is a student's salary — visible as its own bucket, not
         // blended into Salary. Matches the helbReceived merchant rule.
@@ -1750,7 +1752,7 @@ object MpesaParser {
             // Printing outranks Food: "Cyber Cafe" is a print shop, not lunch.
             lower.contains("cyber") || lower.contains("print") || lower.contains("book") || lower.contains("stationery") || lower.contains("photocopy") -> "Printing"
             lower.contains("java") || lower.contains("hotel") || lower.contains("cafe") || lower.contains("kiosk") || lower.contains("kibanda") || lower.contains("vibanda") || lower.contains("lunch") || lower.contains("supper") || lower.contains("breakfast") || lower.contains("dinner") || lower.contains("chapo") || lower.contains("chips") || lower.contains("smokie") || lower.contains("mutura") || lower.contains("ndengu") || lower.contains("ugali") ||             lower.contains("sukuma") || lower.contains("pilau") || lower.contains("chapati") || lower.contains("nyama") || lower.contains("kuku") || lower.contains("mama") || lower.contains("rest") || lower.contains("food") || lower.contains("eat") || lower.contains("artcaffe") || lower.contains("kfc") || lower.contains("big square") || lower.contains("galitos") || lower.contains("chicken inn") || lower.contains("pizza inn") -> "Food"
-            lower.contains("matatu") || lower.contains("uber") || lower.contains("bolt") || lower.contains("lavender") || lower.contains("stage") || lower.contains("fare") || lower.contains("boda") || lower.contains("motorbike") || lower.contains("grability") || lower.contains("ride") || lower.contains("car") || lower.contains("parking") || lower.contains("expressway") || lower.contains("ntsa") || lower.contains("metro") -> "Transport"
+            lower.contains("matatu") || lower.contains("uber") || lower.contains("bolt") || lower.contains("lavender") || lower.contains("stage") || lower.contains("fare") || lower.contains("boda") || lower.contains("motorbike") || lower.contains("grability") || lower.contains("ride") || lower.contains("car") || lower.contains("parking") || lower.contains("expressway") || lower.contains("ntsa") || lower.contains("metro") || com.pesaflow.app.data.finance.isTransportOperator(lower) -> "Transport"
             // "house" alone doesn't mean rent (coffee houses, food houses) —
             // real rent texts say rent/hostel/apartment/nyumba.
             lower.contains("hostel") || lower.contains("rent") || lower.contains("apartment") -> "Rent"
