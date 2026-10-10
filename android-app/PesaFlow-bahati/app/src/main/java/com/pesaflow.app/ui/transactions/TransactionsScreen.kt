@@ -4,6 +4,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -80,11 +82,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private fun groupLabel(dayStart: Long, now: Long): String {
+private fun groupLabel(dayStart: Long, now: Long, lang: com.pesaflow.app.data.models.AppLanguage = com.pesaflow.app.data.models.AppLanguage.ENGLISH): String {
     val fmt = SimpleDateFormat("EEEE, d MMM", Locale.getDefault())
     return when (dayStart) {
-        startOfDay(now) -> "TODAY"
-        addDays(startOfDay(now), -1) -> "YESTERDAY"
+        startOfDay(now) -> com.pesaflow.app.ui.language.txnT("day_today", lang)
+        addDays(startOfDay(now), -1) -> com.pesaflow.app.ui.language.txnT("day_yesterday", lang)
         else -> fmt.format(Date(dayStart)).uppercase(Locale.getDefault())
     }
 }
@@ -98,6 +100,7 @@ fun TransactionsScreen(
 ) {
     val transactions by viewModel.allTransactions.collectAsState()
     val pendings by viewModel.pendingTransactions.collectAsState()
+    val lang by viewModel.currentLanguage.collectAsState()
     var editingTx by remember { mutableStateOf<Transaction?>(null) }
     var confirmDelete by remember { mutableStateOf<Transaction?>(null) }
     val snackbar = remember { SnackbarHostState() }
@@ -129,9 +132,15 @@ fun TransactionsScreen(
             onProgress = { f, _ -> scanFound = f },
             onDone = { found, queued, feeTotal, error ->
                 scanning = false
-                scanMsg = if (error != null) "Scan failed: $error"
-                else "Scanned $found texts ($label): $queued new for review, rest already logged." +
-                    (if (feeTotal > 0) " KSh ${feeTotal.toInt()} fees seen." else "") + " ✅"
+                val rangeName = when (days) {
+                    1 -> com.pesaflow.app.ui.language.txnT("today", lang)
+                    7 -> com.pesaflow.app.ui.language.txnT("days7", lang)
+                    30 -> com.pesaflow.app.ui.language.txnT("days30", lang)
+                    else -> label
+                }
+                scanMsg = if (error != null) com.pesaflow.app.ui.language.txnT("scan_fail", lang, error)
+                else com.pesaflow.app.ui.language.txnT("scan_done", lang, found.toString(), rangeName, queued.toString()) +
+                    (if (feeTotal > 0) com.pesaflow.app.ui.language.txnT("scan_fees", lang, feeTotal.toInt().toString()) else "") + " ✅"
             }
         )
     }
@@ -213,12 +222,12 @@ fun TransactionsScreen(
         Scaffold(
             containerColor = Color.Transparent,
             snackbarHost = { SnackbarHost(snackbar) },
-            topBar = {
+                topBar = {
                 TopAppBar(
-                    title = { Text("Transactions", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge.copy(shadow = Shadow(color = Color.Black.copy(alpha = 0.65f), offset = Offset(0f, 2f), blurRadius = 8f))) },
+                    title = { Text(com.pesaflow.app.ui.language.txnT("title", lang), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge.copy(shadow = Shadow(color = Color.Black.copy(alpha = 0.65f), offset = Offset(0f, 2f), blurRadius = 8f))) },
                     actions = {
                         TextButton(onClick = onAskBuddy) {
-                            Text("Ask Buddy")
+                            Text(com.pesaflow.app.ui.language.txnT("ask_buddy", lang))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -239,23 +248,23 @@ fun TransactionsScreen(
                 }
                 if (pendings.isNotEmpty()) {
                     PesaEmptyState(
-                        title = "${pendings.size} waiting in Pending",
-                        explanation = "Your scan found them — confirm and they land here as transactions.",
-                        actionLabel = if (sure.isNotEmpty()) "Confirm ${sure.size} sure" else "Scan M-Pesa SMS",
+                        title = com.pesaflow.app.ui.language.txnT("empty_pending_title", lang, pendings.size.toString()),
+                        explanation = com.pesaflow.app.ui.language.txnT("empty_pending_body", lang),
+                        actionLabel = if (sure.isNotEmpty()) com.pesaflow.app.ui.language.txnT("confirm_sure", lang, sure.size.toString()) else com.pesaflow.app.ui.language.txnT("scan_sms_btn", lang),
                         onAction = {
                             if (sure.isNotEmpty()) {
                                 viewModel.approveAllPending(sure)
                                 scope.launch {
-                                    snackbar.showSnackbar("${sure.size} confirmed.", duration = SnackbarDuration.Short)
+                                    snackbar.showSnackbar(com.pesaflow.app.ui.language.txnT("confirmed_msg", lang, sure.size.toString()), duration = SnackbarDuration.Short)
                                 }
                             } else runScan(30, "30 days")
                         }
                     )
                 } else {
                     PesaEmptyState(
-                        title = "No transactions yet",
-                        explanation = "Scan your M-Pesa messages — rows queue for review, then land here.",
-                        actionLabel = if (scanning) "Scanning… $scanFound found" else "Scan M-Pesa SMS",
+                        title = com.pesaflow.app.ui.language.txnT("no_tx_title", lang),
+                        explanation = com.pesaflow.app.ui.language.txnT("no_tx_body", lang),
+                        actionLabel = if (scanning) com.pesaflow.app.ui.language.txnT("scanning_found", lang, scanFound.toString()) else com.pesaflow.app.ui.language.txnT("scan_sms_btn", lang),
                         onAction = { runScan(30, "30 days") }
                     )
                     scanMsg?.let {
@@ -269,7 +278,7 @@ fun TransactionsScreen(
                 OutlinedTextField(
                     value = merchantQuery,
                     onValueChange = { merchantQuery = it },
-                    label = { Text("Search merchant or category") },
+                    label = { Text(com.pesaflow.app.ui.language.txnT("search_label", lang)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -277,19 +286,21 @@ fun TransactionsScreen(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = onOpenSearch) { Text("Search everything 🔍 → budgets, bills, screens") }
+                    TextButton(onClick = onOpenSearch) { Text(com.pesaflow.app.ui.language.txnT("search_everything", lang)) }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     FilterChip(
                         selected = typeFilter == null,
                         onClick = { typeFilter = null },
-                        label = { Text("All") }
+                        label = { Text(com.pesaflow.app.ui.language.txnT("t_all", lang)) }
                     )
-                    listOf("INCOME" to "In", "EXPENSE" to "Out", "SAVING" to "Saved", "INVESTMENT" to "Grown", "TRANSFER" to "Moved").forEach { (v, label) ->
+                    listOf("INCOME" to com.pesaflow.app.ui.language.txnT("t_in", lang), "EXPENSE" to com.pesaflow.app.ui.language.txnT("t_out", lang), "SAVING" to com.pesaflow.app.ui.language.txnT("t_saved", lang), "INVESTMENT" to com.pesaflow.app.ui.language.txnT("t_grown", lang), "TRANSFER" to com.pesaflow.app.ui.language.txnT("t_moved", lang)).forEach { (v, label) ->
                         FilterChip(
                             selected = typeFilter == v,
                             onClick = { typeFilter = if (typeFilter == v) null else v },
@@ -309,30 +320,34 @@ fun TransactionsScreen(
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    FilterChip(selected = !oldestFirst, onClick = { oldestFirst = false }, label = { Text("Newest first") })
-                    FilterChip(selected = oldestFirst, onClick = { oldestFirst = true }, label = { Text("Oldest first") })
+                    FilterChip(selected = !oldestFirst, onClick = { oldestFirst = false }, label = { Text(com.pesaflow.app.ui.language.txnT("newest", lang)) })
+                    FilterChip(selected = oldestFirst, onClick = { oldestFirst = true }, label = { Text(com.pesaflow.app.ui.language.txnT("oldest", lang)) })
                     FilterChip(
                         selected = selecting,
                         onClick = {
                             selecting = !selecting
                             if (!selecting) selection = emptySet()
                         },
-                        label = { Text(if (selecting) "Done" else "Select") }
+                        label = { Text(if (selecting) com.pesaflow.app.ui.language.txnT("done_sel", lang) else com.pesaflow.app.ui.language.txnT("select", lang)) }
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    FilterChip(selected = rangeDays == null, onClick = { rangeDays = null }, label = { Text("All time") })
-                    FilterChip(selected = rangeDays == 0, onClick = { rangeDays = if (rangeDays == 0) null else 0 }, label = { Text("Today") })
-                    FilterChip(selected = rangeDays == 7, onClick = { rangeDays = if (rangeDays == 7) null else 7 }, label = { Text("7 days") })
-                    FilterChip(selected = rangeDays == 30, onClick = { rangeDays = if (rangeDays == 30) null else 30 }, label = { Text("30 days") })
+                    FilterChip(selected = rangeDays == null, onClick = { rangeDays = null }, label = { Text(com.pesaflow.app.ui.language.txnT("all_time", lang)) })
+                    FilterChip(selected = rangeDays == 0, onClick = { rangeDays = if (rangeDays == 0) null else 0 }, label = { Text(com.pesaflow.app.ui.language.txnT("today", lang)) })
+                    FilterChip(selected = rangeDays == 7, onClick = { rangeDays = if (rangeDays == 7) null else 7 }, label = { Text(com.pesaflow.app.ui.language.txnT("days7", lang)) })
+                    FilterChip(selected = rangeDays == 30, onClick = { rangeDays = if (rangeDays == 30) null else 30 }, label = { Text(com.pesaflow.app.ui.language.txnT("days30", lang)) })
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 // Scan row: today is one tap; week/month/history live behind
@@ -343,25 +358,27 @@ fun TransactionsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = { runScan(1, "today") }, enabled = !scanning) {
-                        Text(if (scanning) "Scanning… $scanFound found" else "Scan today 📥")
+                        Text(if (scanning) com.pesaflow.app.ui.language.txnT("scanning_found", lang, scanFound.toString()) else com.pesaflow.app.ui.language.txnT("scan_today", lang))
                     }
                     TextButton(onClick = { showMoreScan = !showMoreScan }) {
-                        Text(if (showMoreScan) "Less ▴" else "More scan options ▾")
+                        Text(if (showMoreScan) com.pesaflow.app.ui.language.txnT("less", lang) else com.pesaflow.app.ui.language.txnT("more_scan", lang))
                     }
                 }
                 if (showMoreScan) {
                     Text(
-                        "Today checks this morning's texts. Longer scans catch older money — duplicates are skipped automatically by M-Pesa code.",
+                        com.pesaflow.app.ui.language.txnT("scan_explainer", lang),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Row(
-                        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        TextButton(onClick = { runScan(7, "7 days") }, enabled = !scanning) { Text("Scan 7 days") }
-                        TextButton(onClick = { runScan(30, "30 days") }, enabled = !scanning) { Text("Scan 30 days") }
-                        TextButton(onClick = { runScan(150, "5 months") }, enabled = !scanning) { Text("Scan 5 months") }
+                        TextButton(onClick = { runScan(7, "7 days") }, enabled = !scanning) { Text(com.pesaflow.app.ui.language.txnT("scan7", lang)) }
+                        TextButton(onClick = { runScan(30, "30 days") }, enabled = !scanning) { Text(com.pesaflow.app.ui.language.txnT("scan30", lang)) }
+                        TextButton(onClick = { runScan(150, "5 months") }, enabled = !scanning) { Text(com.pesaflow.app.ui.language.txnT("scan5m", lang)) }
                     }
                 }
                 scanMsg?.let {
@@ -443,8 +460,8 @@ fun TransactionsScreen(
                             }
                             val moved = txs.count { it.type == TransactionType.TRANSFER }
                             PesaSectionHeader(
-                                title = groupLabel(day, now),
-                                subtitle = "${txs.size} item(s) · " + (if (dayNet >= 0) "+" else "−") + " KSh " + kotlin.math.abs(dayNet).toInt() + (if (moved > 0) " · $moved moved" else "")
+                                title = groupLabel(day, now, lang),
+                                subtitle = com.pesaflow.app.ui.language.txnT("day_items", lang, txs.size.toString()) + (if (dayNet >= 0) "+" else "−") + " KSh " + kotlin.math.abs(dayNet).toInt() + (if (moved > 0) com.pesaflow.app.ui.language.txnT("day_moved", lang, moved.toString()) else "")
                             )
                         }
                         items(txs, key = { it.id }) { tx ->
@@ -457,7 +474,8 @@ fun TransactionsScreen(
                                     selected = tx.id in selection,
                                     onToggleSelect = if (selecting) ({
                                         selection = if (tx.id in selection) selection - tx.id else selection + tx.id
-                                    }) else null
+                                    }) else null,
+                                    lang = lang
                                 )
                             }
                         }
@@ -472,12 +490,12 @@ fun TransactionsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Showing $visibleCount of ${sorted.size} · In KSh ${viewIn.toInt()} · Out KSh ${viewOut.toInt()} · Net " + (if (viewIn - viewOut >= 0) "+" else "−") + "KSh ${kotlin.math.abs(viewIn - viewOut).toInt()}",
+                    com.pesaflow.app.ui.language.txnT("showing", lang, visibleCount.toString(), sorted.size.toString(), viewIn.toInt().toString(), viewOut.toInt().toString()) + com.pesaflow.app.ui.language.txnT("net", lang) + (if (viewIn - viewOut >= 0) "+" else "−") + "KSh ${kotlin.math.abs(viewIn - viewOut).toInt()}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
-                    TextButton(onClick = { shareTxs(transactions, "all") }) { Text("Share all") }
+                    TextButton(onClick = { shareTxs(transactions, "all") }) { Text(com.pesaflow.app.ui.language.txnT("share_all", lang)) }
                 }
                 if (visibleCount < sorted.size) {
                     Row(
@@ -485,8 +503,8 @@ fun TransactionsScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        TextButton(onClick = { visibleLimit += 100 }) { Text("Show 100 more") }
-                        TextButton(onClick = { visibleLimit = sorted.size }) { Text("Show all ${sorted.size}") }
+                        TextButton(onClick = { visibleLimit += 100 }) { Text(com.pesaflow.app.ui.language.txnT("show_more", lang)) }
+                        TextButton(onClick = { visibleLimit = sorted.size }) { Text(com.pesaflow.app.ui.language.txnT("show_all", lang, sorted.size.toString())) }
                     }
                 }
                 }
@@ -500,14 +518,14 @@ fun TransactionsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            "${selection.size} picked · KSh ${pickedTotal.toInt()}",
+                            com.pesaflow.app.ui.language.txnT("picked", lang, selection.size.toString(), pickedTotal.toInt().toString()),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.weight(1f)
                         )
-                        TextButton(onClick = { shareTxs(picked, "picked") }) { Text("Share") }
+                        TextButton(onClick = { shareTxs(picked, "picked") }) { Text(com.pesaflow.app.ui.language.txnT("share", lang)) }
                         TextButton(onClick = { confirmBulk = true }) {
-                            Text("Delete", color = MaterialTheme.colorScheme.error)
+                            Text(com.pesaflow.app.ui.language.txnT("delete", lang), color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -520,14 +538,14 @@ fun TransactionsScreen(
                             verticalArrangement = Arrangement.spacedBy(com.pesaflow.app.ui.theme.ppSpacing.xs)
                         ) {
                             com.pesaflow.app.ui.theme.PpSectionHeader(
-                                title = "Possible duplicates (${dupClusters.size})",
-                                subtitle = "Same amount + merchant. Merge keeps the newest, deletes the rest."
+                                title = com.pesaflow.app.ui.language.txnT("dup_title", lang, dupClusters.size.toString()),
+                                subtitle = com.pesaflow.app.ui.language.txnT("dup_sub", lang)
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             if (autoCount > 0) {
                                 TextButton(onClick = { confirmAuto = true }) {
                                     Text(
-                                        "Auto-remove $autoCount exact",
+                                        com.pesaflow.app.ui.language.txnT("auto_remove", lang, autoCount.toString()),
                                         style = com.pesaflow.app.ui.theme.ppTypography.labelLarge,
                                         color = com.pesaflow.app.ui.theme.ppColors.gold
                                     )
@@ -547,8 +565,8 @@ fun TransactionsScreen(
                                     )
                                     TextButton(onClick = {
                                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        viewModel.undoAutoDedupe { n -> autoResult = "Restored $n row(s)" }
-                                    }) { Text("Undo") }
+                                        viewModel.undoAutoDedupe { n -> autoResult = com.pesaflow.app.ui.language.txnT("restored", lang, n.toString()) }
+                                    }) { Text(com.pesaflow.app.ui.language.txnT("undo", lang)) }
                                 }
                             }
                             dupClusters.take(5).forEach { g ->
@@ -565,7 +583,7 @@ fun TransactionsScreen(
                                     )
                                     TextButton(onClick = { mergeGroup = g }) {
                                         Text(
-                                            "Review",
+                                            com.pesaflow.app.ui.language.txnT("review_btn", lang),
                                             style = com.pesaflow.app.ui.theme.ppTypography.labelMedium,
                                             color = com.pesaflow.app.ui.theme.ppColors.gold
                                         )
@@ -637,25 +655,25 @@ fun TransactionsScreen(
                 if (confirmAuto) {
                     AlertDialog(
                         onDismissRequest = { confirmAuto = false },
-                        title = { Text("Remove $autoCount duplicates?") },
-                        text = { Text("Same amount, merchant, day and method within minutes. Keeps the earliest of each group — undo brings them back.") },
+                        title = { Text(com.pesaflow.app.ui.language.txnT("dedupe_title", lang, autoCount.toString())) },
+                        text = { Text(com.pesaflow.app.ui.language.txnT("dedupe_body", lang)) },
                         confirmButton = {
                             TextButton(onClick = {
                                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                 viewModel.autoRemoveExactDuplicates(autoGroups) { n ->
                                     confirmAuto = false
-                                    autoResult = "Removed $n exact duplicate(s)"
+                                    autoResult = com.pesaflow.app.ui.language.txnT("removed_dupes", lang, n.toString())
                                 }
-                            }) { Text("Remove") }
+                            }) { Text(com.pesaflow.app.ui.language.txnT("remove", lang)) }
                         },
-                        dismissButton = { TextButton(onClick = { confirmAuto = false }) { Text("Keep") } }
+                        dismissButton = { TextButton(onClick = { confirmAuto = false }) { Text(com.pesaflow.app.ui.language.txnT("keep", lang)) } }
                     )
                 }
                 mergeGroup?.let { g ->
                     AlertDialog(
                         onDismissRequest = { mergeGroup = null },
-                        title = { Text("Merge ${g.size} rows?") },
-                        text = { Text("Keeps the newest ${g.first().merchant} KSh ${g.first().amount.toInt()}, deletes the other ${g.size - 1}. Batch deletes can't be undone.") },
+                        title = { Text(com.pesaflow.app.ui.language.txnT("merge_title", lang, g.size.toString())) },
+                        text = { Text(com.pesaflow.app.ui.language.txnT("merge_body", lang, g.first().merchant, g.first().amount.toInt().toString(), (g.size - 1).toString())) },
                         confirmButton = {
                             TextButton(onClick = {
                                 val keep = g.maxByOrNull { it.dateTimestamp }?.id
@@ -664,9 +682,9 @@ fun TransactionsScreen(
                                 viewModel.deleteTransactions(g.filter { it.id != keep }.map { it.id }) {
                                     mergeGroup = null
                                 }
-                            }) { Text("Merge", color = MaterialTheme.colorScheme.error) }
+                            }) { Text(com.pesaflow.app.ui.language.txnT("merge_btn", lang), color = MaterialTheme.colorScheme.error) }
                         },
-                        dismissButton = { TextButton(onClick = { mergeGroup = null }) { Text("Keep all") } }
+                        dismissButton = { TextButton(onClick = { mergeGroup = null }) { Text(com.pesaflow.app.ui.language.txnT("keep_all", lang)) } }
                     )
                 }
             }
@@ -682,8 +700,8 @@ fun TransactionsScreen(
         val picked = transactions.filter { it.id in selection }
         AlertDialog(
             onDismissRequest = { confirmBulk = false },
-            title = { Text("Delete ${picked.size} transactions?") },
-            text = { Text("KSh ${picked.sumOf { it.amount }.toInt()} goes away. Batch deletes can't be undone — singles can.") },
+            title = { Text(com.pesaflow.app.ui.language.txnT("del_bulk_title", lang, picked.size.toString())) },
+            text = { Text(com.pesaflow.app.ui.language.txnT("del_bulk_body", lang, picked.sumOf { it.amount }.toInt().toString())) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deleteTransactions(picked.map { it.id }) {
@@ -691,29 +709,29 @@ fun TransactionsScreen(
                         selecting = false
                         confirmBulk = false
                     }
-                }) { Text("Delete all", color = MaterialTheme.colorScheme.error) }
+                }) { Text(com.pesaflow.app.ui.language.txnT("del_all_btn", lang), color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { confirmBulk = false }) { Text("Keep") } }
+            dismissButton = { TextButton(onClick = { confirmBulk = false }) { Text(com.pesaflow.app.ui.language.txnT("keep", lang)) } }
         )
     }
 
     confirmDelete?.let { tx ->
         AlertDialog(
             onDismissRequest = { confirmDelete = null },
-            title = { Text("Delete this transaction?") },
-            text = { Text("${tx.merchant} · KSh ${tx.amount.toInt()} — you can undo right after.") },
+            title = { Text(com.pesaflow.app.ui.language.txnT("del_title", lang)) },
+            text = { Text(com.pesaflow.app.ui.language.txnT("del_body", lang, tx.merchant, tx.amount.toInt().toString())) },
             confirmButton = {
                 TextButton(onClick = {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     viewModel.deleteTransactionWithUndo(tx)
                     confirmDelete = null
                     scope.launch {
-                        val r = snackbar.showSnackbar("Deleted ${tx.merchant}.", "Undo", duration = SnackbarDuration.Long)
+                        val r = snackbar.showSnackbar(com.pesaflow.app.ui.language.txnT("deleted_merchant", lang, tx.merchant), com.pesaflow.app.ui.language.txnT("undo", lang), duration = SnackbarDuration.Long)
                         if (r == SnackbarResult.ActionPerformed) viewModel.undoLast()
                     }
-                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                }) { Text(com.pesaflow.app.ui.language.txnT("delete", lang), color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text("Keep") } }
+            dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text(com.pesaflow.app.ui.language.txnT("keep", lang)) } }
         )
     }
 }
@@ -726,7 +744,8 @@ fun TransactionRow(
     showActions: Boolean = true,
     runningBalance: Double? = null,
     selected: Boolean = false,
-    onToggleSelect: (() -> Unit)? = null
+    onToggleSelect: (() -> Unit)? = null,
+    lang: com.pesaflow.app.data.models.AppLanguage = com.pesaflow.app.data.models.AppLanguage.ENGLISH
 ) {
     val isIncome = tx.type == TransactionType.INCOME
     val ctx = LocalContext.current
@@ -789,7 +808,7 @@ fun TransactionRow(
                 )
                 if (runningBalance != null) {
                     Text(
-                        "Bal " + (if (runningBalance < 0) "−" else "") + "KSh " + kotlin.math.abs(runningBalance).toInt(),
+                        com.pesaflow.app.ui.language.txnT("bal", lang) + (if (runningBalance < 0) "−" else "") + "KSh " + kotlin.math.abs(runningBalance).toInt(),
                         style = com.pesaflow.app.ui.theme.ppTypography.bodySmall,
                         color = com.pesaflow.app.ui.theme.ppColors.textTertiary,
                         maxLines = 1
@@ -797,10 +816,10 @@ fun TransactionRow(
                 }
             }
             if (showActions) {
-                IconButton(onClick = { showAlias = true }) { Icon(Icons.Filled.Person, contentDescription = "Name this sender", tint = com.pesaflow.app.ui.theme.ppColors.textTertiary) }
-                IconButton(onClick = onEdit) { Icon(Icons.Filled.Edit, contentDescription = "Edit transaction", tint = com.pesaflow.app.ui.theme.ppColors.textTertiary) }
+                IconButton(onClick = { showAlias = true }) { Icon(Icons.Filled.Person, contentDescription = com.pesaflow.app.ui.language.txnT("name_sender", lang), tint = com.pesaflow.app.ui.theme.ppColors.textTertiary) }
+                IconButton(onClick = onEdit) { Icon(Icons.Filled.Edit, contentDescription = com.pesaflow.app.ui.language.txnT("edit_txn", lang), tint = com.pesaflow.app.ui.theme.ppColors.textTertiary) }
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Delete transaction", tint = com.pesaflow.app.ui.theme.ppColors.error)
+                    Icon(Icons.Filled.Delete, contentDescription = com.pesaflow.app.ui.language.txnT("del_txn", lang), tint = com.pesaflow.app.ui.theme.ppColors.error)
                 }
             }
         }
@@ -808,24 +827,24 @@ fun TransactionRow(
     if (showAlias) {
         AlertDialog(
             onDismissRequest = { showAlias = false },
-            title = { Text("Who is ${tx.merchant.ifBlank { tx.category }}?") },
+            title = { Text(com.pesaflow.app.ui.language.txnT("alias_title", lang, tx.merchant.ifBlank { tx.category })) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "Give them a name once — every future row from this sender shows it, and their category is remembered too.",
+                        com.pesaflow.app.ui.language.txnT("alias_body", lang),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     OutlinedTextField(
                         value = aliasInput,
                         onValueChange = { aliasInput = it },
-                        label = { Text("Name (e.g. Mom)") },
+                        label = { Text(com.pesaflow.app.ui.language.txnT("alias_label", lang)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
                     if (alias != null) {
                         Text(
-                            "Now showing as “${alias.label}”.",
+                            com.pesaflow.app.ui.language.txnT("alias_showing", lang, alias.label),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -839,7 +858,7 @@ fun TransactionRow(
                         aliasTick++
                     }
                     showAlias = false
-                }) { Text("Save") }
+                }) { Text(com.pesaflow.app.ui.language.txnT("save", lang)) }
             },
             dismissButton = {
                 Row {
@@ -848,9 +867,9 @@ fun TransactionRow(
                             MerchantMemory.clear(prefs, tx.merchant)
                             aliasTick++
                             showAlias = false
-                        }) { Text("Forget") }
+                        }) { Text(com.pesaflow.app.ui.language.txnT("forget", lang)) }
                     }
-                    TextButton(onClick = { showAlias = false }) { Text("Cancel") }
+                    TextButton(onClick = { showAlias = false }) { Text(com.pesaflow.app.ui.language.txnT("cancel", lang)) }
                 }
             }
         )

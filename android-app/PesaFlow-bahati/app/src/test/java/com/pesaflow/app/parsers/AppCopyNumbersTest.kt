@@ -1,9 +1,17 @@
 package com.pesaflow.app.parsers
 
 import com.pesaflow.app.data.models.AppLanguage
+import com.pesaflow.app.ui.language.dashT
 import com.pesaflow.app.ui.language.moneySpoken
-import com.pesaflow.app.ui.language.moneyWords
 import com.pesaflow.app.ui.language.swahiliUnder100
+import com.pesaflow.app.ui.language.moneyWords
+import com.pesaflow.app.ui.language.moreChrome
+import com.pesaflow.app.ui.language.moreEntrySubtitle
+import com.pesaflow.app.ui.language.moreEntryTitle
+import com.pesaflow.app.ui.language.moreSectionName
+import com.pesaflow.app.ui.language.tabLabel
+import com.pesaflow.app.ui.language.txnT
+import com.pesaflow.app.ui.language.weekdayShort
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -46,6 +54,28 @@ class AppCopyNumbersTest {
         while (k <= 300000) {
             langs.forEach { lang -> moneySpoken(k.toDouble(), lang) }
             k += 137
+        }
+    }
+
+    @Test
+    fun `nav and dashboard dictionaries cover all voices without blanks`() {
+        val langs = listOf(AppLanguage.ENGLISH, AppLanguage.KISWAHILI, AppLanguage.SHENG, AppLanguage.MIXED)
+        langs.forEach { lang ->
+            listOf("Home", "Plan", "Money", "Insight", "You").forEach { assertTrue(tabLabel(it, lang).isNotBlank()) }
+            listOf("Money", "Planning", "Student life", "Tools", "App").forEach { assertTrue(moreSectionName(it, lang).isNotBlank()) }
+            listOf("analytics", "bills", "savings", "meals", "kitchen", "pesa", "settings").forEach {
+                assertTrue(moreEntryTitle(it, lang).isNotBlank())
+                assertTrue(moreEntrySubtitle(it, lang).isNotBlank())
+            }
+            listOf("title", "subtitle", "search", "clear", "empty_title", "empty_body").forEach { assertTrue(moreChrome(it, lang).isNotBlank()) }
+            listOf("hub_title", "tune", "next_calm", "money_positions", "pending_title", "file_transport", "confirm_btn", "undo_btn", "safe_title", "sem_runway", "fee_bleed", "coach_t1", "jump_to", "motiv0").forEach {
+                assertTrue(dashT(it, lang, "5", "10", "c", "d", "e").isNotBlank())
+            }
+            listOf("title", "ask_buddy", "search_label", "t_in", "newest", "scan_today", "showing", "share_all", "dup_title", "merge_body", "del_bulk_body", "alias_body", "save", "cancel", "bal").forEach {
+                assertTrue(txnT(it, lang, "5", "10", "c", "d").isNotBlank())
+            }
+            assertEquals("Mon", weekdayShort("Mon", AppLanguage.ENGLISH))
+            assertEquals("JTT", weekdayShort("Mon", AppLanguage.KISWAHILI))
         }
     }
 }
