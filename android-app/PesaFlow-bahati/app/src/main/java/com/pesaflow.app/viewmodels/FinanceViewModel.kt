@@ -660,6 +660,56 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
     }
 
 
+    /**
+     * Post-scan transport sweep: pending EXPENSE rows whose amount sits in
+     * the fare band AND whose timestamp falls in a class-trip window read
+     * as rides. Empty when no one-way fare or no class times exist — the
+     * button simply never appears instead of guessing.
+     */
+    fun transportCandidates(pendings: List<PendingTransaction>): List<PendingTransaction> {
+        val fare = prefs().getString("school_fare_one_way", null)?.toDoubleOrNull() ?: 0.0
+        if (fare <= 0) return emptyList()
+        val minFare = prefs().getString("min_transport_fare", null)?.toDoubleOrNull() ?: 0.0
+        val classTimes = com.pesaflow.app.data.schedule.WeekPlan.loadTimes(getApplication())
+        if (classTimes.isEmpty()) return emptyList()
+        return pendings.filter { p ->
+            p.type == TransactionType.EXPENSE &&
+                com.pesaflow.app.data.schedule.matchesCommuteSpend(
+                    p.amount, p.dateTimestamp, fare, classTimes, minFare = minFare
+                )
+        }
+    }
+
+    /**
+     * Files ride names onto the single Transport contact card (category
+     * Transport, scope OUT, match terms = every operator name). Future
+     * scans stamp rows from any listed name via applyContactMemory — no
+     * one-contact-per-SACCO bookkeeping. Returns newly added names.
+     */
+    fun rememberTransportCard(merchants: List<String>): Int {
+        val p = prefs()
+        val cardName = com.pesaflow.app.data.ledger.TRANSPORT_CARD_NAME
+        val existing = com.pesaflow.app.data.ledger.ContactBook.lookup(p, cardName)
+        val priorBook = com.pesaflow.app.data.ledger.splitUserList(existing?.matchTerms.orEmpty())
+        val allStrings = p.all.mapNotNull { (k, v) -> (v as? String)?.let { k to it } }.toMap()
+        val priorMem = com.pesaflow.app.data.ledger.readContactMemories(allStrings)[
+            com.pesaflow.app.data.ledger.normalizeContact(cardName)
+        ]?.matchTerms.orEmpty()
+        val merged = com.pesaflow.app.data.ledger.mergeTransportTerms(priorBook + priorMem, merchants)
+        val before = (priorBook + priorMem).map { it.trim().lowercase() }.toSet()
+        val added = merged.count { it.lowercase() !in before }
+        if (added == 0 && existing != null) return 0
+        val terms = merged.joinToString(",")
+        com.pesaflow.app.data.ledger.ContactBook.save(
+            p, cardName, "Transport · rides", "Business", "Transport", "OUT",
+            "Auto-collected ride names — every name here files as Transport.", terms
+        )
+        com.pesaflow.app.data.ledger.saveContactMemory(
+            p, cardName, "Rides", "Transport", "OUT", terms
+        )
+        return added
+    }
+
     private val APPROVE_BATCH_SIZE: Int = 50
 
     // Bulk confirm: one tap approves every "sure" row as suggested, one undo

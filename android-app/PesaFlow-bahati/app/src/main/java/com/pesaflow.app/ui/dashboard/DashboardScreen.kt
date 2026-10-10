@@ -1124,6 +1124,13 @@ fun DashboardScreen(
                     val categorizedRows = remember(pendingTransactions) {
                         pendingTransactions.filter { !com.pesaflow.app.data.parsers.PendingPolicy.needsCategory(it) }
                     }
+                    // Transport sweep: fare-band amount + class-trip window
+                    // rows read as rides. One tap files them AND saves every
+                    // operator name onto the Transport contact card, so the
+                    // next scan files them before they ever reach this queue.
+                    val transportRows = remember(pendingTransactions) {
+                        viewModel.transportCandidates(pendingTransactions)
+                    }
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text("Pending (${pendingTransactions.size}) 🔔", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         // Scrollable actions: "Remove duplicates + Confirm all
@@ -1166,6 +1173,21 @@ fun DashboardScreen(
                                         if (r == SnackbarResult.ActionPerformed) viewModel.undoLast()
                                     }
                                 }) { Text("Confirm categorized (${categorizedRows.size})") }
+                            }
+                            if (transportRows.isNotEmpty()) {
+                                TextButton(onClick = {
+                                    viewModel.approveAllPending(transportRows)
+                                    val added = viewModel.rememberTransportCard(transportRows.map { it.merchant })
+                                    scope.launch {
+                                        snackbar.currentSnackbarData?.dismiss()
+                                        val r = snackbar.showSnackbar(
+                                            "${transportRows.size} rides filed as Transport" +
+                                                if (added > 0) " · $added name${if (added == 1) "" else "s"} saved to the Transport card 🚌" else " · names already on the Transport card 🚌",
+                                            "Undo", withDismissAction = true, duration = SnackbarDuration.Short
+                                        )
+                                        if (r == SnackbarResult.ActionPerformed) viewModel.undoLast()
+                                    }
+                                }) { Text("File transport (${transportRows.size}) 🚌") }
                             }
                             TextButton(onClick = { showAllPending = !showAllPending }) {
                                 Text(if (showAllPending) "Less" else "View all")

@@ -872,6 +872,18 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                     if ("fare" in visible) {
                         OutlinedTextField(value = transportDaily, onValueChange = { transportDaily = it }, label = { Text("Transport per day, to and back? (KSh)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
                         Text("→ Transport budget (×30) + commuter weight in the calculator.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        // The fare rule, stated where the fare is typed:
+                        // amount (near one-way) + time (class-trip window) →
+                        // auto-filed Transport, operator names collected on
+                        // one Transport contact card. No surprises later.
+                        transportDaily.toDoubleOrNull()?.takeIf { it > 0 }?.let { roundTrip ->
+                            val oneWay = (roundTrip / 2.0).toInt()
+                            Text(
+                                "Rule: rides near KSh $oneWay around your class hours file themselves as Transport 🚌 — every matatu, boda and shuttle name lands on one Transport contact card, so the next scan files them before review.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Who pays this fare?", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
                         com.pesaflow.app.ui.theme.SegChoice(

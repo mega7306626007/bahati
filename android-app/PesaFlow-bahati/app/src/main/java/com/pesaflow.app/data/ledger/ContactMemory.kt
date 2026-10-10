@@ -37,6 +37,29 @@ fun normalizeContact(raw: String): String =
             w.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
         }
 
+/** The single group card that owns every ride name: matatu SACCOs, boda
+ *  stages, shuttles. One card, many match terms — future rows from any of
+ *  them file as Transport instead of needing one contact per operator. */
+const val TRANSPORT_CARD_NAME = "Transport"
+
+/**
+ * Merges new ride names into the Transport card's term list. Pure:
+ * normalizes, drops blanks and the card's own name, de-dupes
+ * case-insensitively keeping first-seen casing. Returns the merged list.
+ */
+fun mergeTransportTerms(existing: List<String>, fresh: List<String>): List<String> {
+    val seen = mutableSetOf<String>()
+    val out = mutableListOf<String>()
+    fun add(raw: String) {
+        val clean = raw.trim().replace(Regex("\\s+"), " ")
+        if (clean.isEmpty() || clean.equals(TRANSPORT_CARD_NAME, ignoreCase = true)) return
+        if (seen.add(clean.lowercase())) out.add(clean.take(60))
+    }
+    existing.forEach { add(it) }
+    fresh.forEach { add(it) }
+    return out
+}
+
 fun contactLabelKey(name: String) = "contact_label_" + normalizeContact(name)
 fun contactCatKey(name: String) = "contact_cat_" + normalizeContact(name)
 fun contactScopeKey(name: String) = "contact_scope_" + normalizeContact(name)
