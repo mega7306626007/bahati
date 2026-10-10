@@ -157,7 +157,7 @@ fun suggestMemory(text: String): ContactMemory {
         has("school", "university", "college", "registrar", "exam", "fees") -> ContactMemory("", "School", "OUT")
         has("kplc", "token", "nairobi water", " water", "wifi") -> ContactMemory("", "Bills", "OUT")
         has("boda", "matatu", "bolt", "uber", "stage", "fare", "shuttle") || com.pesaflow.app.data.finance.isTransportOperator(t) -> ContactMemory("", "Transport", "OUT")
-        has("kibanda", "mboga", "grocery", "naivas", "carrefour", "quickmart", "chips", "smocha", "restaurant", "kiosk", "butchery") -> ContactMemory("", "Food", "OUT")
+        has("kibanda", "mboga", "grocery", "naivas", "carrefour", "quickmart", "chips", "smocha", "restaurant", "kiosk", "butchery") || com.pesaflow.app.data.meals.isFoodSpot(t) -> ContactMemory("", "Food", "OUT")
         has("airtime", "bundle", "data") -> ContactMemory("", "Airtime", "OUT")
         has("chama", "sacco") -> ContactMemory("", "Savings", "OUT")
         else -> ContactMemory("", "", "BOTH")
