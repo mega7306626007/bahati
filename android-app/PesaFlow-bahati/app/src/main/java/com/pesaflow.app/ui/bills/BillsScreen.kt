@@ -52,7 +52,13 @@ fun BillsScreen(viewModel: FinanceViewModel) {
     // you paid three times". Home/campus names feed rent matching.
     val profile by viewModel.universityProfile.collectAsState()
     val dirHits = remember(transactions, bills, profile) {
-        val homes = listOfNotNull(profile?.campus, profile?.universityName)
+        // Rental areas from the campus transport atlas join campus +
+        // university names, so "GREENVIEW COURT" near KU reads as rent
+        // (still category-gated — a bookshop in the same town never does).
+        val atlasAreas = profile?.universityName
+            ?.let { com.pesaflow.app.data.finance.transportFor(it)?.rentalAreas }
+            .orEmpty()
+        val homes = (listOfNotNull(profile?.campus, profile?.universityName) + atlasAreas).distinct()
         com.pesaflow.app.data.finance.suggestBillsFromDirectory(transactions, homes).filter { hit ->
             bills.none { it.status != "PAID" && it.name.equals(hit.biller.displayName, ignoreCase = true) }
         }.take(5)

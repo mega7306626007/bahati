@@ -872,6 +872,14 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                     if ("fare" in visible) {
                         OutlinedTextField(value = transportDaily, onValueChange = { transportDaily = it }, label = { Text("Transport per day, to and back? (KSh)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
                         Text("→ Transport budget (×30) + commuter weight in the calculator.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        // Atlas fare band: 2026 route research for THIS
+                        // university, shown only while the box is empty —
+                        // anything typed always wins over the estimate.
+                        if (transportDaily.isBlank()) {
+                            com.pesaflow.app.data.finance.campusFareHint(university)?.let { hint ->
+                                Text(hint + ".", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
                         // The fare rule, stated where the fare is typed:
                         // amount (near one-way) + time (class-trip window) →
                         // auto-filed Transport, operator names collected on
