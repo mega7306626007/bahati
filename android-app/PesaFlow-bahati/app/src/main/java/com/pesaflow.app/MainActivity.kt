@@ -306,6 +306,9 @@ private fun PesaFlowAppNav(viewModel: FinanceViewModel) {
 
     val profile by viewModel.universityProfile.collectAsState()
 
+    // Whole-app language: tabs + More menu read it live; screens follow.
+    val appLang by viewModel.currentLanguage.collectAsState()
+
     val notifMetrics = remember(transactions, budgets) {
         val now = System.currentTimeMillis()
         val cal = java.util.Calendar.getInstance().apply { timeInMillis = now }
@@ -388,11 +391,11 @@ private fun PesaFlowAppNav(viewModel: FinanceViewModel) {
             // Insight = what is changing · You = how PesaFlow understands me.
             com.pesaflow.app.ui.theme.PpBottomBar(
                 items = listOf(
-                    com.pesaflow.app.ui.theme.PpNavItem("Home", Icons.Filled.Home),
-                    com.pesaflow.app.ui.theme.PpNavItem("Plan", Icons.Filled.AccountBalanceWallet),
-                    com.pesaflow.app.ui.theme.PpNavItem("Money", Icons.AutoMirrored.Filled.ReceiptLong),
-                    com.pesaflow.app.ui.theme.PpNavItem("Insight", Icons.Filled.Lightbulb),
-                    com.pesaflow.app.ui.theme.PpNavItem("You", Icons.Filled.Person)
+                    com.pesaflow.app.ui.theme.PpNavItem(com.pesaflow.app.ui.language.tabLabel("Home", appLang), Icons.Filled.Home),
+                    com.pesaflow.app.ui.theme.PpNavItem(com.pesaflow.app.ui.language.tabLabel("Plan", appLang), Icons.Filled.AccountBalanceWallet),
+                    com.pesaflow.app.ui.theme.PpNavItem(com.pesaflow.app.ui.language.tabLabel("Money", appLang), Icons.AutoMirrored.Filled.ReceiptLong),
+                    com.pesaflow.app.ui.theme.PpNavItem(com.pesaflow.app.ui.language.tabLabel("Insight", appLang), Icons.Filled.Lightbulb),
+                    com.pesaflow.app.ui.theme.PpNavItem(com.pesaflow.app.ui.language.tabLabel("You", appLang), Icons.Filled.Person)
                 ),
                 selectedIndex = selectedTab,
                 onSelect = { i ->
@@ -583,7 +586,7 @@ private fun PesaFlowAppNav(viewModel: FinanceViewModel) {
                         )
                     }
                     NavRoutes.INFO -> InfoScreen()
-                    else -> MoreScreen(onSelect = {
+                    else -> MoreScreen(lang = appLang, onSelect = {
                         if (it == NavRoutes.BUDDY) openBuddy(null) else moreSection = it
                     })
                 }
@@ -651,41 +654,57 @@ private fun PesaFlowAppNav(viewModel: FinanceViewModel) {
 
 
 @Composable
-private fun MoreScreen(onSelect: (String) -> Unit) {
+private fun MoreScreen(lang: com.pesaflow.app.data.models.AppLanguage, onSelect: (String) -> Unit) {
     data class Entry(
+        val section: String,
+        val icon: ImageVector,
+        val route: String
+    )
+    data class ShownEntry(
         val section: String,
         val icon: ImageVector,
         val title: String,
         val subtitle: String,
         val route: String
     )
+    // Routes only — every visible word resolves through AppCopy, so the
+    // whole menu follows the app language instead of staying English.
     val entries = listOf(
-        Entry("Money", Icons.Filled.Menu, "Analytics", "Category trends, comparisons and heatmaps", NavRoutes.ANALYTICS),
-        Entry("Money", Icons.Filled.DateRange, "Reports", "Daily, weekly, monthly and annual summaries", NavRoutes.REPORTS),
-        Entry("Money", Icons.Filled.AccountBalance, "Net Worth", "Cash, savings, investments and debts", NavRoutes.NETWORTH),
-        Entry("Money", Icons.Filled.AccountBalanceWallet, "Income", "Track money sources and expected payments", NavRoutes.INCOME),
-        Entry("Money", Icons.Filled.Search, "Search", "Find a transaction by merchant or category", NavRoutes.SEARCH),
-        Entry("Planning", Icons.Filled.Home, "Bills", "Due dates, recurring bills and payer details", NavRoutes.BILLS),
-        Entry("Planning", Icons.Filled.AccountBox, "Debt Tracking", "Money owed, borrowed and repaid", NavRoutes.DEBT),
-        Entry("Planning", Icons.Filled.Savings, "Savings", "Savings goals and progress", NavRoutes.SAVINGS),
-        Entry("Planning", Icons.Filled.Star, "Goal Planner", "Goal pace, risk and suggestions", NavRoutes.GOALS),
-        Entry("Planning", Icons.Filled.DateRange, "Recurring", "Spending patterns and monthly commitments", NavRoutes.RECURRING),
-        Entry("Student life", Icons.Filled.DateRange, "Semester", "Term plan, runway and fees", NavRoutes.SEMESTER),
-        Entry("Student life", Icons.Filled.Favorite, "Meal Planner", "Plan meals with your food budget", NavRoutes.MEALS),
-        Entry("Student life", Icons.Filled.DateRange, "Kitchen Stock", "Track staple quantities and refill needs", NavRoutes.KITCHEN),
-        Entry("Student life", Icons.Filled.ShoppingCart, "My Things", "Track what you own and still need", NavRoutes.THINGS),
-        Entry("Student life", Icons.Filled.Star, "University", "Campus, timetable and allowance planning", NavRoutes.UNIVERSITY),
-        Entry("Tools", Icons.Filled.Star, "Export & Backup", "Export transactions or back up your data", NavRoutes.EXPORT),
-        Entry("Tools", Icons.Filled.Person, "Contact Book", "Remember people and categorize transactions", NavRoutes.CONTACTS),
-        Entry("Tools", Icons.Filled.CheckCircle, "Weekly review", "Review uncategorized items and duplicates", NavRoutes.REVIEW),
-        Entry("Tools", Icons.Filled.Info, "App Guide & Formulas", "Learn how PesaFlow calculates your finances", NavRoutes.INFO),
-        Entry("App", Icons.Filled.Face, "PesaBuddy", "Ask questions about your saved money data", NavRoutes.BUDDY),
-        Entry("App", Icons.Filled.Favorite, "Notifications", "Configure reminders and financial alerts", NavRoutes.NOTIFICATIONS),
-        Entry("App", Icons.Filled.Settings, "Settings", "Language, appearance, notifications and data", NavRoutes.SETTINGS)
+        Entry("Money", Icons.Filled.Menu, NavRoutes.ANALYTICS),
+        Entry("Money", Icons.Filled.DateRange, NavRoutes.REPORTS),
+        Entry("Money", Icons.Filled.AccountBalance, NavRoutes.NETWORTH),
+        Entry("Money", Icons.Filled.AccountBalanceWallet, NavRoutes.INCOME),
+        Entry("Money", Icons.Filled.Search, NavRoutes.SEARCH),
+        Entry("Planning", Icons.Filled.Home, NavRoutes.BILLS),
+        Entry("Planning", Icons.Filled.AccountBox, NavRoutes.DEBT),
+        Entry("Planning", Icons.Filled.Savings, NavRoutes.SAVINGS),
+        Entry("Planning", Icons.Filled.Star, NavRoutes.GOALS),
+        Entry("Planning", Icons.Filled.DateRange, NavRoutes.RECURRING),
+        Entry("Student life", Icons.Filled.DateRange, NavRoutes.SEMESTER),
+        Entry("Student life", Icons.Filled.Favorite, NavRoutes.MEALS),
+        Entry("Student life", Icons.Filled.DateRange, NavRoutes.KITCHEN),
+        Entry("Student life", Icons.Filled.ShoppingCart, NavRoutes.THINGS),
+        Entry("Student life", Icons.Filled.Star, NavRoutes.UNIVERSITY),
+        Entry("Tools", Icons.Filled.Star, NavRoutes.EXPORT),
+        Entry("Tools", Icons.Filled.Person, NavRoutes.CONTACTS),
+        Entry("Tools", Icons.Filled.CheckCircle, NavRoutes.REVIEW),
+        Entry("Tools", Icons.Filled.Info, NavRoutes.INFO),
+        Entry("App", Icons.Filled.Face, NavRoutes.BUDDY),
+        Entry("App", Icons.Filled.Favorite, NavRoutes.NOTIFICATIONS),
+        Entry("App", Icons.Filled.Settings, NavRoutes.SETTINGS)
     )
+    val shown = entries.map {
+        ShownEntry(
+            com.pesaflow.app.ui.language.moreSectionName(it.section, lang),
+            it.icon,
+            com.pesaflow.app.ui.language.moreEntryTitle(it.route, lang),
+            com.pesaflow.app.ui.language.moreEntrySubtitle(it.route, lang),
+            it.route
+        )
+    }
     var featureQuery by remember { mutableStateOf("") }
     val query = featureQuery.trim()
-    val filtered = entries.filter {
+    val filtered = shown.filter {
         query.isBlank() || it.title.contains(query, ignoreCase = true) ||
             it.subtitle.contains(query, ignoreCase = true) ||
             it.section.contains(query, ignoreCase = true)
@@ -697,17 +716,17 @@ private fun MoreScreen(onSelect: (String) -> Unit) {
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("More features", style = com.pesaflow.app.ui.theme.ppTypography.h1, color = com.pesaflow.app.ui.theme.ppColors.textPrimary)
-            Text("Find student tools and account settings", style = com.pesaflow.app.ui.theme.ppTypography.bodyMedium, color = com.pesaflow.app.ui.theme.ppColors.textTertiary)
+            Text(com.pesaflow.app.ui.language.moreChrome("title", lang), style = com.pesaflow.app.ui.theme.ppTypography.h1, color = com.pesaflow.app.ui.theme.ppColors.textPrimary)
+            Text(com.pesaflow.app.ui.language.moreChrome("subtitle", lang), style = com.pesaflow.app.ui.theme.ppTypography.bodyMedium, color = com.pesaflow.app.ui.theme.ppColors.textTertiary)
             androidx.compose.material3.OutlinedTextField(
                 value = featureQuery,
                 onValueChange = { featureQuery = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                label = { Text("Search features") },
+                label = { Text(com.pesaflow.app.ui.language.moreChrome("search", lang)) },
                 trailingIcon = if (featureQuery.isNotBlank()) {
                     {
-                        TextButton(onClick = { featureQuery = "" }) { Text("Clear") }
+                        TextButton(onClick = { featureQuery = "" }) { Text(com.pesaflow.app.ui.language.moreChrome("clear", lang)) }
                     }
                 } else null
             )
@@ -716,8 +735,8 @@ private fun MoreScreen(onSelect: (String) -> Unit) {
                     colors = CardDefaults.cardColors(containerColor = com.pesaflow.app.ui.theme.ppColors.surface)
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("No features found", fontWeight = FontWeight.SemiBold)
-                        Text("Try another search, or clear the search to browse all tools.")
+                        Text(com.pesaflow.app.ui.language.moreChrome("empty_title", lang), fontWeight = FontWeight.SemiBold)
+                        Text(com.pesaflow.app.ui.language.moreChrome("empty_body", lang))
                     }
                 }
             } else {

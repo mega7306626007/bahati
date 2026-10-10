@@ -389,27 +389,157 @@ object BuddyStrings {
         "Mimi ni PesaBuddy 🤖 — buddy yako wa doh chuo. Nasoma history yako ya M-Pesa kuwa budgets, balances na plans, na sigusi doh bila tap yako. Niulize 'is my budget safe?' ama tap suggestion hapo juu."
     )
 
+    // Joke bank: 12 rotating campus jokes, trilingual. Indices 0–2 are
+    // the originals, byte-identical — tests pin them. Ask "another one"
+    // for the next in rotation.
+    const val JOKE_COUNT: Int = 12
+
     fun joke(index: Int, lang: AppLanguage): String {
-        val i = ((index % 3) + 3) % 3
+        val i = ((index % JOKE_COUNT) + JOKE_COUNT) % JOKE_COUNT
         return pick(
             lang,
             when (i) {
                 0 -> "Why did the student stare at his M-Pesa message? He was watching his money disappear in real time. 😄"
                 1 -> "My budget and I have an agreement: it pretends to limit me, I pretend to follow it. 🤝"
-                else -> "HELB is like Nairobi rain — everyone debates when it's coming, nobody knows. ☔"
+                2 -> "HELB is like Nairobi rain — everyone debates when it's coming, nobody knows. ☔"
+                3 -> "My M-Pesa balance and my bundles have something in common: both disappear faster after midnight. 🌙"
+                4 -> "Chapati economics: at KSh 20 a piece, the only investment that has never disappointed anyone. 📈"
+                5 -> "Nairobi matatus have two speeds: late, and 'hongera, umefika'. 🚌"
+                6 -> "I asked my phone for bundles advice. It said: have you tried touching grass? 📱"
+                7 -> "Exams are like fare hikes: nobody warned you, everybody is shocked, and the lecturer denies everything. 📝"
+                8 -> "A smokie a day keeps the HELB delay away. Probably. Science is still checking. 🌭"
+                9 -> "My budget is a storybook: great opening, plot twist by mid-month. 📖"
+                10 -> "I joined a chama to save money. Now I fund other people's emergencies professionally. 🤝"
+                else -> "I sleep early to save bundles. My dreams are now sponsored by low power mode. 🔋"
             },
             when (i) {
                 0 -> "Kwa nini mwanafunzi aliangalia SMS ya M-Pesa? Alikuwa anaangalia pesa zake zikitoweka live. 😄"
                 1 -> "Mimi na bajeti yangu tuna makubaliano: inanidanganya kunizuia, na mimi najifanya naifuata. 🤝"
-                else -> "HELB ni kama mvua ya Nairobi — kila mtu anajadili itakuja lini, hakuna anayejua. ☔"
+                2 -> "HELB ni kama mvua ya Nairobi — kila mtu anajadili itakuja lini, hakuna anayejua. ☔"
+                3 -> "Salio langu la M-Pesa na bandos zangu zina kitu kimoja: vyote hupotea haraka zaidi baada ya usiku wa manane. 🌙"
+                4 -> "Uchumi wa chapati: kwa shilingi 20, ndio uwekezaji pekee ambao haujawahi kumuangusha mtu. 📈"
+                5 -> "Matatu za Nairobi zina spidi mbili: kuchelewa, na 'hongera, umefika'. 🚌"
+                6 -> "Niliomba simu yangu ushauri wa bandos. Ikasema: umewahi kujaribu kutoka nje? 📱"
+                7 -> "Mtihani ni kama kupanda kwa nauli: hakuna aliyekuonya, kila mtu ameshtuka, na mhadhiri anakataa kila kitu. 📝"
+                8 -> "Smokie moja kwa siku huondoa kuchelewa kwa HELB. Labda. Sayansi bado inachunguza. 🌭"
+                9 -> "Bajeti yangu ni hadithi: mwanzo mzuri, twist katikati ya mwezi. 📖"
+                10 -> "Nilijiunga na chama kuweka akiba. Sasa nafundisha dharura za watu wengine kitaaluma. 🤝"
+                else -> "Nalala mapema kuokoa bandos. Ndoto zangu sasa zinadhaminiwa na low power mode. 🔋"
             },
             when (i) {
                 0 -> "Mbona msee ali-stare SMS ya M-Pesa? Alikuwa anawatch doh zake zikidisappear live. 😄"
                 1 -> "Mimi na budget yangu tuko na deal: inanidanganya kunilimit, na mimi najifanya naifuata. 🤝"
-                else -> "HELB ni kama rain ya Nairobi — kila mtu anadebate itakam lini, hakuna anajua. ☔"
+                2 -> "HELB ni kama rain ya Nairobi — kila mtu anadebate itakam lini, hakuna anajua. ☔"
+                3 -> "Balance yangu ya M-Pesa na bundles zangu ziko same WhatsApp group: zote hudisappear faster after midnight. 🌙"
+                4 -> "Chapati economics: thao moja, returns guaranteed. Only investment haijawahi kudisappoint. 📈"
+                5 -> "Mat za Nairobi ziko na speed mbili: late, na 'hongera, umefika'. 🚌"
+                6 -> "Niliuliza simu bundles advice. Ikaniambia: umetry kutoka nje? 📱"
+                7 -> "Exams ni kama fare hike: hakuna aliku-warn, kila mtu ameshock, na lecturer anadeny everything. 📝"
+                8 -> "Smokie moja daily huheal HELB delay. Probably. Science bado inaverify. 🌭"
+                9 -> "Budget yangu ni story: intro fiti, plot twist mid-month. 📖"
+                10 -> "Nilijoin chama ku-save. Sai nafund emergency za watu professionally. 🤝"
+                else -> "Nalala early ku-save bundles. Dreams zangu sai ziko sponsored na low power mode. 🔋"
             }
         )
     }
+
+    // Gentle roasts of the SITUATION, never the person. Debt stays neutral.
+    fun situationRoast(kind: String, lang: AppLanguage): String = pick(
+        lang,
+        when (kind) {
+            "overbudget" -> "This envelope overspent — the situation is guilty, not you. Even my code has bugs and I still show up. 😄"
+            "helb_wait" -> "HELB is fashionably late again — the situation, not you. Nairobi rain also keeps everyone waiting. ☔"
+            "fare_hike" -> "Fare hiked mid-month — the matatu did that, not you. Peak hour has no mercy and no refund policy. 🚌"
+            "broke_week" -> "Broke week is a season, not a verdict. Ugali weather passes — it always does. 🍽️"
+            else -> "Exam season: the lecturer denies everything, the timetable fears nothing. Protect study fuel first. 📝"
+        },
+        when (kind) {
+            "overbudget" -> "Bahasha hii imevuka — hali ndiyo ina hatia, si wewe. Hata code yangu ina bugs lakini bado nipo. 😄"
+            "helb_wait" -> "HELB imechelewa tena — hali, si wewe. Mvua ya Nairobi pia huw NGOjesha kila mtu. ☔"
+            "fare_hike" -> "Nauli imepanda katikati ya mwezi — matatu ndiyo imefanya hivyo, si wewe. Saa za mapema hazina huruma. 🚌"
+            "broke_week" -> "Wiki ngumu ni msimu, si hukumu. Hali ya ugali hupita — hupita tu. 🍽️"
+            else -> "Msimu wa mtihani: mhadhiri anakataa kila kitu, ratiba haiogopi chochote. Linda chakula cha kusoma kwanza. 📝"
+        },
+        when (kind) {
+            "overbudget" -> "Hii envelope imeoverspend — situation ndiyo guilty, si wewe. Hata code yangu iko na bugs na bado niko hapa. 😄"
+            "helb_wait" -> "HELB imelate tena — situation, si wewe. Rain ya Nairobi pia hukeep kila mtu waiting. ☔"
+            "fare_hike" -> "Fare imehike mid-month — mat ndiyo ilifanya hivyo, si wewe. Peak hour haina mercy. 🚌"
+            "broke_week" -> "Broke week ni season, si verdict. Ugali weather hupita — hupita tu. 🍽️"
+            else -> "Exam season: lecturer anadeny everything, timetable haiogopi kitu. Protect study fuel first. 📝"
+        }
+    )
+
+    // ---------- new conversation topics: campus life + advice ----------
+
+    fun examSeason(tip: String, lang: AppLanguage): String = pick(
+        lang,
+        "Exam season survival 📝: $tip And keep one comfort meal in the plan — stressed brains negotiate badly with kibandas. 😄",
+        "Kuishi msimu wa mtihani 📝: $tip Na uweke mlo mmoja wa faraja kwenye mpango — ubongo wenye msongo hujadiliana vibaya na vibanda. 😄",
+        "Exam season survival 📝: $tip Na keep comfort meal moja kwa plan — stressed brain hu-negotiate vibaya na vibanda. 😄"
+    )
+
+    fun helbWatch(expected: String, lang: AppLanguage): String = pick(
+        lang,
+        "HELB watch 👀: expecting KSh $expected this term. Nothing landed in your records yet — HELB is like Nairobi rain, everyone debates, nobody knows. ☔ Ask me again after a scan and I'll flag it the moment it lands.",
+        "Kuangalia HELB 👀: tunatarajia KSh $expected muhula huu. Hakuna kilichofika kwenye rekodi zako bado — HELB ni kama mvua ya Nairobi, kila mtu anajadili, hakuna anayejua. ☔ Niulize tena baada ya scan nami nitaiashiria inapofika.",
+        "HELB watch 👀: tunagojea KSh $expected hii sem. Hakuna imeland kwa records zako bado — HELB ni kama rain ya Nairobi, kila mtu anadebate, hakuna anajua. ☔ Niulize tena after scan na nitai-flag ikiland."
+    )
+
+    fun helbWatchNone(lang: AppLanguage): String = pick(
+        lang,
+        "No HELB figure on your profile yet — set 'HELB expected' under University → Edit Profile and I'll watch for it like Nairobi rain. ☔",
+        "Hakuna kiwango cha HELB kwenye wasifu wako bado — weka 'HELB expected' chini ya University → Edit Profile nami nitaiangalia kama mvua ya Nairobi. ☔",
+        "Hakuna HELB figure kwa profile yako bado — weka 'HELB expected' kwa University → Edit Profile nami nitai-watch kama rain ya Nairobi. ☔"
+    )
+
+    fun fareAdvice(oneWay: String, monthTotal: String, lang: AppLanguage): String = pick(
+        lang,
+        "Nauli report 🚌: one-way ≈ KSh $oneWay, Transport this month KSh $monthTotal. Peak hikes wobble ±KSh 50 — walk trips under 2 km when you can, and rides near your fare around class hours file themselves as Transport.",
+        "Ripoti ya nauli 🚌: kwenda ≈ KSh $oneWay, Usafiri mwezi huu KSh $monthTotal. Kupanda kwa saa za mapema hubadilika ±KSh 50 — tembea safari chini ya km 2 unapoweza, na safari karibu na nauli yako karibu na masaa ya darasa hujifilisha kama Usafiri.",
+        "Nauli report 🚌: one-way ≈ KSh $oneWay, Transport hii mwezi KSh $monthTotal. Peak hikes hu-wobble ±KSh 50 — walk trips chini ya 2 km ukiweza, na rides karibu na fare yako around class hours hujifile kama Transport."
+    )
+
+    fun cheapEats(name: String, price: String, lang: AppLanguage): String = pick(
+        lang,
+        "Broke-week menu 🍽️: $name at KSh $price — cheapest Cook plate in your catalog. Ugali + sukuma stretches furthest per shilling, and bulk cooking twice a week beats daily kibanda runs.",
+        "Menyu ya wiki ngumu 🍽️: $name kwa KSh $price — sahani ya kupika rahisi zaidi kwenye orodha yako. Ugali + sukuma huenea zaidi kwa shilingi, na kupika kwa wingi mara mbili kwa wiki hushinda kukimbilia vibanda kila siku.",
+        "Broke-week menu 🍽️: $name at KSh $price — cheapest Cook plate kwa catalog yako. Ugali + sukuma hu-stretch furthest per bob, na kupika bulk twice a week hushinda daily kibanda runs."
+    )
+
+    fun cheapEatsNone(lang: AppLanguage): String = pick(
+        lang,
+        "No Cook plates in your foods yet — add a few under Meal Planner → My Foods (ugali, sukuma, ndengu) and I'll crown the cheapest. 👑",
+        "Hakuna sahani za kupika kwenye vyakula vyako bado — weka chache chini ya Meal Planner → My Foods (ugali, sukuma, ndengu) nami nitaitawaza rahisi zaidi. 👑",
+        "Hakuna Cook plates kwa foods zako bado — add chache kwa Meal Planner → My Foods (ugali, sukuma, ndengu) nami nitacrown cheapest. 👑"
+    )
+
+    fun saveTip(progress: String, lang: AppLanguage): String = pick(
+        lang,
+        "Save game 🎯: $progress Rule that works: skim 10% off every income before spending — pay your future self first, chama second, cravings last.",
+        "Mchezo wa akiba 🎯: $progress Sheria inayofanya kazi: toa 10% ya kila kipato kabla ya kutumia — jilipe wewe wa baadaye kwanza, chama pili, tamaa mwisho.",
+        "Save game 🎯: $progress Rule inawork: toa 10% ya kila income before kuspend — jilipe future self first, chama second, cravings last."
+    )
+
+    fun pepTalk(lang: AppLanguage): String = pick(
+        lang,
+        "Pole sana 💚. Broke weeks end — HELB lands, terms turn. Today's job: one cheap Cook meal + zero impulse buys. Your ledger has survived worse, and so have you. 😄",
+        "Pole sana 💚. Wiki ngumu huisha — HELB hufika, mihula hubadilika. Kazi ya leo: mlo mmoja rahisi wa kupika + sifuri manunuzi ya ghafla. Ledger yako imevuka mabaya zaidi, na wewe pia. 😄",
+        "Pole sana 💚. Broke weeks huisha — HELB huland, semesters huturn. Job ya leo: Cook meal moja cheap + zero impulse buys. Ledger yako imesurvive worse, na wewe pia. 😄"
+    )
+
+    fun transportMonth(total: String, count: String, lang: AppLanguage): String = pick(
+        lang,
+        "Your wheels this month 🚌: KSh $total across $count rides. Rides near your fare around class hours file themselves — tap 'File transport' on Home → Pending after a scan and every operator lands on your Transport card.",
+        "Magurudumu yako mwezi huu 🚌: KSh $total katika safari $count. Safari karibu na nauli yako karibu na masaa ya darasa hujifilisha — gusa 'File transport' kwenye Home → Pending baada ya scan na kila opereta huingia kwenye kadi yako ya Usafiri.",
+        "Magari yako hii mwezi 🚌: KSh $total across rides $count. Rides karibu na fare yako around class hours hujifile — tap 'File transport' kwa Home → Pending after scan na kila operator huingia kwa Transport card yako."
+    )
+
+    fun adviceTip(envelope: String, amount: String, tip: String, lang: AppLanguage): String = pick(
+        lang,
+        "My one advice 💡: $envelope is your leakiest envelope at KSh $amount this month. $tip",
+        "Ushauri wangu mmoja 💡: $envelope ndiyo bahasha inayovuja zaidi kwa KSh $amount mwezi huu. $tip",
+        "Advice yangu moja 💡: $envelope ndiyo leakiest envelope at KSh $amount hii mwezi. $tip"
+    )
 
     fun sorryReply(lang: AppLanguage): String = pick(
         lang,

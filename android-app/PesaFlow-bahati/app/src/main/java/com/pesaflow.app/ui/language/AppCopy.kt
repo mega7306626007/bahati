@@ -708,3 +708,83 @@ fun dashKey(key: String, arg: String, lang: AppLanguage): String {
         else -> c.pick(lang)
     }
 }
+
+// ---------- Bottom tabs + More menu (whole-app language starts here) ----------
+
+fun tabLabel(tab: String, lang: AppLanguage): String = when (tab) {
+    "Plan" -> Copy4("Plan", "Mpango", "Plan", "Plan").pick(lang)
+    "Money" -> Copy4("Money", "Pesa", "Doh", "Doh").pick(lang)
+    "Insight" -> Copy4("Insight", "Ufahamu", "Rada", "Rada").pick(lang)
+    "You" -> Copy4("You", "Yangu", "Mimi", "You").pick(lang)
+    else -> Copy4("Home", "Nyumbani", "Home", "Home").pick(lang)
+}
+
+fun moreSectionName(section: String, lang: AppLanguage): String = when (section) {
+    "Planning" -> Copy4("Planning", "Mipango", "Maplan", "Planning").pick(lang)
+    "Student life" -> Copy4("Student life", "Maisha ya chuo", "Life ya chuo", "Campus life").pick(lang)
+    "Tools" -> Copy4("Tools", "Zana", "Matools", "Tools").pick(lang)
+    "App" -> Copy4("App", "App", "App", "App").pick(lang)
+    else -> Copy4("Money", "Pesa", "Doh", "Money").pick(lang)
+}
+
+/** More-menu entry title + subtitle by route. Unknown routes pass through. */
+fun moreEntryTitle(route: String, lang: AppLanguage): String = when (route) {
+    "analytics" -> Copy4("Analytics", "Takwimu", "Stats", "Analytics").pick(lang)
+    "reports" -> Copy4("Reports", "Ripoti", "Repoti", "Repoti").pick(lang)
+    "networth" -> Copy4("Net Worth", "Thamani Halisi", "Net Worth", "Net Worth").pick(lang)
+    "income" -> Copy4("Income", "Mapato", "Income", "Income").pick(lang)
+    "search" -> Copy4("Search", "Tafuta", "Search", "Search").pick(lang)
+    "bills" -> Copy4("Bills", "Bili", "Mabill", "Bills").pick(lang)
+    "debt" -> Copy4("Debt Tracking", "Madeni", "Madeni", "Madeni").pick(lang)
+    "savings" -> Copy4("Savings", "Akiba", "Savings", "Savings").pick(lang)
+    "goals" -> Copy4("Goal Planner", "Malengo", "Maplans", "Goals").pick(lang)
+    "recurring" -> Copy4("Recurring", "Yanayojirudia", "Recurring", "Recurring").pick(lang)
+    "semester" -> Copy4("Semester", "Muhula", "Sem", "Semester").pick(lang)
+    "meals" -> Copy4("Meal Planner", "Mipango ya Milo", "Meal Planner", "Meals").pick(lang)
+    "kitchen" -> Copy4("Kitchen Stock", "Stock ya Jikoni", "Stock ya Keja", "Kitchen").pick(lang)
+    "things" -> Copy4("My Things", "Vitu Vyangu", "Vitu Zangu", "Things").pick(lang)
+    "university" -> Copy4("University", "Chuo", "Chuo", "Chuo").pick(lang)
+    "export" -> Copy4("Export & Backup", "Hamisha & Hifadhi", "Export & Backup", "Export").pick(lang)
+    "contacts" -> Copy4("Contact Book", "Kitabu cha Majina", "Contacts", "Contacts").pick(lang)
+    "review" -> Copy4("Weekly review", "Mapitio ya Wiki", "Review ya Wiki", "Review").pick(lang)
+    "info" -> Copy4("App Guide & Formulas", "Mwongozo wa App", "App Guide", "Guide").pick(lang)
+    "pesa" -> Copy4("PesaBuddy", "PesaBuddy", "PesaBuddy", "PesaBuddy").pick(lang)
+    "notifications" -> Copy4("Notifications", "Arifa", "Notifications", "Alerts").pick(lang)
+    "settings" -> Copy4("Settings", "Mipangilio", "Settings", "Settings").pick(lang)
+    else -> route
+}
+
+fun moreEntrySubtitle(route: String, lang: AppLanguage): String = when (route) {
+    "analytics" -> Copy4("Category trends, comparisons and heatmaps", "Mienendo ya makundi, ulinganisho na ramani", "Trends za categories, comparisons na heatmaps", "Trends, comparisons, heatmaps").pick(lang)
+    "reports" -> Copy4("Daily, weekly, monthly and annual summaries", "Muhtasari wa kila siku, wiki, mwezi na mwaka", "Summaries za daily, weekly, monthly na yearly", "Daily → yearly summaries").pick(lang)
+    "networth" -> Copy4("Cash, savings, investments and debts", "Taslimu, akiba, uwekezaji na madeni", "Cash, savings, investments na madeni", "Cash, savings, debts").pick(lang)
+    "income" -> Copy4("Track money sources and expected payments", "Fuatilia vyanzo vya pesa na malipo yanayotarajiwa", "Track sources za doh na payments zinazokuja", "Income sources + expected").pick(lang)
+    "search" -> Copy4("Find a transaction by merchant or category", "Tafuta muamala kwa muuzaji au kundi", "Tafuta transaction kwa merchant ama category", "Find by merchant/category").pick(lang)
+    "bills" -> Copy4("Due dates, recurring bills and payer details", "Tarehe za malipo, bili zinazojirudia na mlipaji", "Due dates, mabill zinajirudia na payer", "Due dates + recurring").pick(lang)
+    "debt" -> Copy4("Money owed, borrowed and repaid", "Pesa unazodaiwa, ulizokopa na ulizolipa", "Doh unadaiwa, umekopa na umelipa", "Owed, borrowed, repaid").pick(lang)
+    "savings" -> Copy4("Savings goals and progress", "Malengo ya akiba na maendeleo", "Savings goals na progress", "Goals + progress").pick(lang)
+    "goals" -> Copy4("Goal pace, risk and suggestions", "Kasi ya malengo, hatari na mapendekezo", "Goal pace, risk na suggestions", "Pace, risk, tips").pick(lang)
+    "recurring" -> Copy4("Spending patterns and monthly commitments", "Mifumo ya matumizi na ahadi za mwezi", "Spending patterns na commitments za mwezi", "Patterns + commitments").pick(lang)
+    "semester" -> Copy4("Term plan, runway and fees", "Mpango wa muhula, kipimo na karo", "Plan ya sem, runway na fees", "Plan, runway, fees").pick(lang)
+    "meals" -> Copy4("Plan meals with your food budget", "Panga milo kwa bajeti yako ya chakula", "Plan meals na food budget yako", "Meals + food budget").pick(lang)
+    "kitchen" -> Copy4("Track staple quantities and refill needs", "Fuatilia kiasi cha vyakula na uhitaji wa kujaza", "Track unga na vitu zimebaki kwa keja", "Staples + refills").pick(lang)
+    "things" -> Copy4("Track what you own and still need", "Fuatilia ulivyo navyo na unavyohitaji", "Track uko navyo na unahitaji", "Own vs need").pick(lang)
+    "university" -> Copy4("Campus, timetable and allowance planning", "Chuo, ratiba na upangaji wa posho", "Chuo, timetable na allowance planning", "Campus + timetable").pick(lang)
+    "export" -> Copy4("Export transactions or back up your data", "Hamisha miamala au hifadhi data yako", "Export transactions ama backup data yako", "Export / backup").pick(lang)
+    "contacts" -> Copy4("Remember people and categorize transactions", "Wakumbuke watu na kupanga miamala", "Wakumbuke watu na kuf file transactions", "People + categories").pick(lang)
+    "review" -> Copy4("Review uncategorized items and duplicates", "Pitia visivyopangwa na vinavyojirudia", "Review uncategorized na duplicates", "Uncategorized + dupes").pick(lang)
+    "info" -> Copy4("Learn how PesaFlow calculates your finances", "Jifunze jinsi PesaFlow inavyohesabu pesa zako", "Jifunze vile PesaFlow huhesabu doh zako", "How calculations work").pick(lang)
+    "pesa" -> Copy4("Ask questions about your saved money data", "Uliza maswali kuhusu data yako ya pesa", "Uliza maswali kuhusu saved doh yako", "Ask about your money").pick(lang)
+    "notifications" -> Copy4("Configure reminders and financial alerts", "Sanidi vikumbusho na arifa za kifedha", "Sanidi reminders na financial alerts", "Reminders + alerts").pick(lang)
+    "settings" -> Copy4("Language, appearance, notifications and data", "Lugha, muonekano, arifa na data", "Language, appearance, notifications na data", "Language + data").pick(lang)
+    else -> ""
+}
+
+fun moreChrome(key: String, lang: AppLanguage): String = when (key) {
+    "title" -> Copy4("More features", "Vipengele Zaidi", "Features Zingine", "More").pick(lang)
+    "subtitle" -> Copy4("Find student tools and account settings", "Tafuta zana za mwanafunzi na mipangilio", "Tafuta student tools na settings", "Tools + settings").pick(lang)
+    "search" -> Copy4("Search features", "Tafuta vipengele", "Search features", "Search").pick(lang)
+    "clear" -> Copy4("Clear", "Futa", "Clear", "Clear").pick(lang)
+    "empty_title" -> Copy4("No features found", "Hakuna vipengele vilivyopatikana", "Hakuna features zimepatikana", "Nothing found").pick(lang)
+    else -> Copy4("Try another search, or clear the search to browse all tools.", "Jaribu utafutaji mwingine, au futa utafutaji uone zana zote.", "Try search ingine, ama clear usee tools zote.", "Try another search.").pick(lang)
+}

@@ -984,10 +984,23 @@ class BuddyPhaseOneTest {
         val sh = com.pesaflow.app.data.models.AppLanguage.SHENG
         assertTrue(strings.whoAreYou(en).contains("PesaBuddy"))
         assertTrue(strings.whoAreYou(sw).contains("PesaBuddy"))
-        // Joke rotation is deterministic: three distinct jokes cycle.
-        val jokes = (0..2).map { strings.joke(it, en) }.toSet()
-        assertEquals(3, jokes.size)
-        assertEquals(strings.joke(0, en), strings.joke(3, en))
+        // Joke rotation is deterministic: twelve distinct jokes cycle.
+        val jokes = (0..11).map { strings.joke(it, en) }.toSet()
+        assertEquals(12, jokes.size)
+        assertEquals(strings.joke(0, en), strings.joke(12, en))
+        // Originals byte-identical: the bank grew, the classics stayed.
+        assertTrue(strings.joke(0, en).contains("disappear in real time"))
+        // Every new topic answers in all three voices.
+        assertTrue(strings.examSeason("tip", en).contains("Exam season"))
+        assertTrue(strings.examSeason("tip", sw).contains("mtihani"))
+        assertTrue(strings.helbWatch("5000", sh).contains("5000"))
+        assertTrue(strings.fareAdvice("50", "800", en).contains("50"))
+        assertTrue(strings.cheapEats("Ugali", "20", sw).contains("Ugali"))
+        assertTrue(strings.saveTip("p", en).contains("10%"))
+        assertTrue(strings.pepTalk(sh).contains("Pole sana"))
+        assertTrue(strings.transportMonth("800", "10", en).contains("800"))
+        assertTrue(strings.adviceTip("Food", "900", "tip", en).contains("Food"))
+        assertTrue(strings.situationRoast("broke_week", en).contains("season, not a verdict"))
         assertTrue(strings.sorryReply(sw).contains("Hakuna shida"))
         assertTrue(strings.howAreYou(sh).contains("fiti"))
         assertTrue(strings.goodMorning(en).contains("Good morning"))

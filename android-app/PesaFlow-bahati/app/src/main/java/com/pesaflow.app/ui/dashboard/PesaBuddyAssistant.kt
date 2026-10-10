@@ -744,7 +744,7 @@ fun processUserInput(
 
         com.pesaflow.app.ui.buddy.BuddyTextNorm.hasWord(q, "joke") || com.pesaflow.app.ui.buddy.BuddyTextNorm.hasWord(q, "jokes") || q.contains("funny") || q.contains("chekesha") || q.contains("nichekeshe") ->
             run {
-                val idx = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_YEAR) % 3
+                val idx = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_YEAR) % com.pesaflow.app.ui.buddy.BuddyStrings.JOKE_COUNT
                 com.pesaflow.app.ui.buddy.BuddyStrings.joke(idx, cardLang)
             }
 
@@ -777,6 +777,77 @@ fun processUserInput(
 
         q.contains("thank") || q.contains("asante") || q.contains("poa") ->
             com.pesaflow.app.ui.buddy.BuddyStrings.thanks(cardLang)
+
+        // Campus-life topics: specific keywords, no money-entity overlap, so
+        // they sit with small talk — before finance branches ever see them.
+        (q.contains("another") && (q.contains("joke") || q.contains("one"))) || q.contains("ingine") || q.contains("eka ingine") || q.contains("more jokes") ->
+            run {
+                val idx = (java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_YEAR) + 1) % com.pesaflow.app.ui.buddy.BuddyStrings.JOKE_COUNT
+                com.pesaflow.app.ui.buddy.BuddyStrings.joke(idx, cardLang)
+            }
+
+        q.contains("exam") || q.contains("mtihani") || q.contains("revision") || q.contains("kusoma") ->
+            run {
+                val tip = if (noCook) "Hostel cooker or kiosk ugali over daily chips runs — protect the study-fuel line first."
+                else "Bulk-cook ugali + sukuma + ndengu twice a week; ad-hoc kibanda runs are where exam-month budgets die."
+                com.pesaflow.app.ui.buddy.BuddyStrings.examSeason(tip, cardLang)
+            }
+
+        (q.contains("helb") && (q.contains("lini") || q.contains("when") || q.contains("come") || q.contains("kuja") || q.contains("watch"))) ->
+            run {
+                val expected = viewModel.universityProfile.value?.helbExpected ?: 0.0
+                if (expected > 0) com.pesaflow.app.ui.buddy.BuddyStrings.helbWatch(expected.toInt().toString(), cardLang)
+                else com.pesaflow.app.ui.buddy.BuddyStrings.helbWatchNone(cardLang)
+            }
+
+        (q.contains("nauli") && (q.contains("panda") || q.contains("high") || q.contains("hike") || q.contains("expensive"))) || q.contains("fare hike") || q.contains("fare high") ->
+            run {
+                val appCtx = viewModel.getApplication<android.app.Application>().applicationContext
+                val farePrefs = appCtx.getSharedPreferences("pesaflow_prefs", android.content.Context.MODE_PRIVATE)
+                val oneWay = farePrefs.getString("school_fare_one_way", null)?.toDoubleOrNull() ?: 0.0
+                val label = if (oneWay > 0) oneWay.toInt().toString() else "your usual"
+                com.pesaflow.app.ui.buddy.BuddyStrings.fareAdvice(label, (byCat["Transport"] ?: 0.0).toInt().toString(), cardLang)
+            }
+
+        q.contains("nini nikule") || q.contains("nile nini") || q.contains("cheap meal") || q.contains("cheap food") || q.contains("broke meal") || q.contains("what should i eat") ->
+            run {
+                val cheapest = viewModel.mealItems.value.filter { it.source == "Cook" && it.price > 0 }.minByOrNull { it.price }
+                if (cheapest != null) com.pesaflow.app.ui.buddy.BuddyStrings.cheapEats(cheapest.name, cheapest.price.toInt().toString(), cardLang)
+                else com.pesaflow.app.ui.buddy.BuddyStrings.cheapEatsNone(cardLang)
+            }
+
+        q.contains("how do i save") || q.contains("how to save") || q.contains("nita-save") || q.contains("nisave") || q.contains("saving tip") || q.contains("kuweka akiba") ->
+            run {
+                val progress = if (goals.isEmpty()) "no savings goal yet — set one under Goals and I'll track it"
+                else {
+                    val g = goals.maxByOrNull { it.targetAmount }
+                    if (g != null && g.targetAmount > 0) "${g.title}: KSh ${g.currentAmount.toInt()} of KSh ${g.targetAmount.toInt()} (${(g.currentAmount / g.targetAmount * 100).toInt()}%)"
+                    else "${goals.size} goal${if (goals.size == 1) "" else "s"} on the board"
+                }
+                com.pesaflow.app.ui.buddy.BuddyStrings.saveTip(progress, cardLang)
+            }
+
+        q.contains("nimechoka") || q.contains("give up") || q.contains("demotivat") || q.contains("nimegive") || q.contains("tired of being broke") ->
+            com.pesaflow.app.ui.buddy.BuddyStrings.pepTalk(cardLang)
+
+        (q.contains("transport") && (q.contains("yangu") || q.contains("month") || q.contains("mwezi") || q.contains("total"))) || q.contains("usafiri wangu") || q.contains("my rides") ->
+            run {
+                val rides = monthExpenses.filter { it.category.equals("Transport", ignoreCase = true) }
+                com.pesaflow.app.ui.buddy.BuddyStrings.transportMonth(rides.sumOf { it.amount }.toInt().toString(), rides.size.toString(), cardLang)
+            }
+
+        q.contains("nishauri") || q.contains("shauri") || (q.contains("advice") && !q.contains("afford")) ->
+            run {
+                val cat = topCat?.key ?: "Food"
+                val amt = (topCat?.value ?: 0.0).toInt().toString()
+                val tip = when {
+                    cat.equals("Food", ignoreCase = true) -> if (noCook) "Kiosk ugali + sukuma plates beat daily chips money — same fullness, half the spend." else "Two bulk-cook days a week; the kibanda is a convenience tax."
+                    cat.equals("Transport", ignoreCase = true) -> if (farCommute) "Far commute is fixed — attack the fare, not the trip: off-peak travel and the 2 km walk rule." else "Walk trips under 2 km; your legs are a free SACCO."
+                    cat.equals("Airtime", ignoreCase = true) || cat.equals("Data", ignoreCase = true) -> "Night bundles + Wi-Fi-first downloads; daytime streaming is the leak."
+                    else -> "Cap it with a weekly envelope and check it every Sunday — awareness is half the saving."
+                }
+                com.pesaflow.app.ui.buddy.BuddyStrings.adviceTip(cat, amt, tip, cardLang)
+            }
 
         q.contains("today") || q.contains("leo") ->
             if (txs.isEmpty()) com.pesaflow.app.ui.buddy.BuddyStrings.todayEmpty(cardLang)
