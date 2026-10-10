@@ -48,6 +48,28 @@ class TransportDirectoryTest {
     }
 
     @Test
+    fun `researched sacco roll hits by name`() {
+        assertEquals("Nawaku Sacco", transportOperatorHit("NAWAKU SACCO")?.displayName)
+        assertEquals("Chepkoilel Sacco", transportOperatorHit("Chepkoilel Matatu Sacco")?.displayName)
+        assertEquals("Njoro Line Sacco", transportOperatorHit("NJORO LINE SACCO")?.displayName)
+        assertEquals("KBS", transportOperatorHit("KBS 237")?.displayName)
+        assertEquals("Manchester Sacco", transportOperatorHit("MANCHESTER SACCO")?.displayName)
+        assertEquals("Biashara Sacco", transportOperatorHit("BIASHARA SACCO dues")?.displayName)
+        assertEquals("Rembo Shuttle", transportOperatorHit("REMBO SHUTTLE")?.displayName)
+        // Lopha membership paybill rows still read as the operator.
+        assertEquals("Lopha Multipurpose SACCO", transportOperatorHit("LOPHA MULTIPURPOSE SACCO")?.displayName)
+    }
+
+    @Test
+    fun `generic-word saccos need their full name`() {
+        // Bare "Precious"/"Supreme" could be any shop; only the full
+        // SACCO name fires.
+        assertNull(transportOperatorHit("Precious Boutique"))
+        assertEquals("Precious Sacco", transportOperatorHit("PRECIOUS SACCO")?.displayName)
+        assertEquals("Ebenezer Sacco", transportOperatorHit("EBENEZER SACCO")?.displayName)
+    }
+
+    @Test
     fun `non-transport merchants miss`() {
         assertNull(transportOperatorHit("NAIVAS SUPERMARKET"))
         assertNull(transportOperatorHit("KPLC TOKEN"))

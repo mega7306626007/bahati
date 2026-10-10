@@ -12,13 +12,14 @@ import org.junit.Test
 class CampusFoodGuideTest {
 
     @Test
-    fun `uon main resolves to uon pack with smocha seventy`() {
+    fun `uon main resolves to uon pack with researched klabu prices`() {
         val spots = spotsFor("UoN Main")
         assertTrue(spots.isNotEmpty())
         assertTrue(spots.all { it.university == "UoN" })
-        val smocha = spots.firstOrNull { it.item == "Smocha" }
+        val smocha = spots.firstOrNull { it.item == "Smocha" && it.verified }
         assertNotNull(smocha)
-        assertEquals(70.0, smocha!!.price, 0.001)
+        // Klabu student price list (Oct 2026) corrected the old 70 estimate.
+        assertEquals(50.0, smocha!!.price, 0.001)
         assertTrue(smocha.spot.isNotBlank())
     }
 
@@ -71,6 +72,20 @@ class CampusFoodGuideTest {
         )
         unis.forEach { assertTrue("$it should resolve", spotsFor(it).isNotEmpty()) }
         assertTrue(spotsFor("Oxford").isEmpty())
+    }
+
+    @Test
+    fun `researched mess prices land verbatim`() {
+        val ku = spotsFor("Kenyatta")
+        assertEquals(15.0, ku.first { it.item == "Chapati" }.price, 0.001)
+        assertEquals(10.0, ku.first { it.item == "Sukuma wiki" }.price, 0.001)
+        assertEquals(100.0, ku.first { it.item == "Chicken & fries" }.price, 0.001)
+        val maseno = spotsFor("Maseno")
+        assertEquals(30.0, maseno.first { it.item == "Student Special" }.price, 0.001)
+        assertEquals(110.0, maseno.first { it.item == "Ugali + sukuma + eggs/omena" }.price, 0.001)
+        val uon = spotsFor("UoN")
+        assertEquals(50.0, uon.first { it.item == "Smocha" }.price, 0.001)
+        assertEquals(100.0, uon.first { it.item == "Beef ugali" }.price, 0.001)
     }
 
     @Test

@@ -43,12 +43,23 @@ private fun plates(uni: String, spot: String) = listOf(
 )
 
 private val GUIDE: List<CampusSpot> = listOf(
-    // UoN Main (Club 36 smocha confirmed by user report)
-    CampusSpot("UoN", "Club 36", "Smocha", 70.0, "Lunch", "Complete", verified = true),
-    CampusSpot("UoN", "Club 36", "Githeri", 50.0, "Lunch", "Complete"),
-    CampusSpot("UoN", "Club 36", "Chai + mandazi", 40.0, "Breakfast", "Complete"),
+    // UoN Main (Klabu/Club 36 student price list, Oct 2026)
+    CampusSpot("UoN", "Klabu (Club 36)", "Basic plate", 30.0, "Lunch", "Complete", verified = true),
+    CampusSpot("UoN", "Klabu (Club 36)", "Smocha", 50.0, "Lunch", "Complete", verified = true),
+    CampusSpot("UoN", "Klabu (Club 36)", "Beef ugali", 100.0, "Lunch", "Protein", verified = true),
+    CampusSpot("UoN", "Klabu (Club 36)", "Githeri", 50.0, "Lunch", "Complete"),
+    CampusSpot("UoN", "Klabu (Club 36)", "Chai + mandazi", 40.0, "Breakfast", "Complete"),
     CampusSpot("UoN", "Mama Njoroge", "Ugali + sukuma + omena", 80.0, "Supper", "Complete"),
-    // KU Kahawa
+    // KU Kahawa (Nyayo/Eastern/Western mess price list, Oct 2026)
+    CampusSpot("KU", "Nyayo Mess", "Ugali", 25.0, "Lunch", "Starch", verified = true),
+    CampusSpot("KU", "Nyayo Mess", "Sukuma wiki", 10.0, "Lunch", "Mboga", verified = true),
+    CampusSpot("KU", "Nyayo Mess", "Beans", 25.0, "Lunch", "Protein", verified = true),
+    CampusSpot("KU", "Nyayo Mess", "Rice", 25.0, "Lunch", "Starch", verified = true),
+    CampusSpot("KU", "Nyayo Mess", "Chapati", 15.0, "Lunch", "Starch", verified = true),
+    CampusSpot("KU", "Nyayo Mess", "Githeri", 40.0, "Lunch", "Complete", verified = true),
+    CampusSpot("KU", "Nyayo Mess", "Beef", 70.0, "Lunch", "Protein", verified = true),
+    CampusSpot("KU", "Nyayo Mess", "Chicken & fries", 100.0, "Lunch", "Protein", verified = true),
+    CampusSpot("KU", "Nyayo Mess", "Ugali Pambana", 100.0, "Supper", "Complete", verified = true),
     CampusSpot("KU", "Main Gate kibanda", "Smocha", 70.0, "Lunch", "Complete"),
     CampusSpot("KU", "Main Gate kibanda", "Pilau", 100.0, "Lunch", "Complete"),
     CampusSpot("KU", "Main Gate kibanda", "Githeri", 60.0, "Supper", "Complete"),
@@ -58,7 +69,13 @@ private val GUIDE: List<CampusSpot> = listOf(
     CampusSpot("JKUAT", "Juja kibanda", "Ugali + omena", 80.0, "Supper", "Complete"),
     CampusSpot("JKUAT", "Juja kibanda", "Chapati + ndengu", 60.0, "Lunch", "Complete"),
     CampusSpot("JKUAT", "Juja kibanda", "Githeri", 50.0, "Supper", "Complete"),
-    // Maseno
+    // Maseno (cafeteria + chafua price list, Oct 2026)
+    CampusSpot("Maseno", "College Cafeteria", "Set meal", 60.0, "Lunch", "Complete", verified = true),
+    CampusSpot("Maseno", "College Cafeteria", "Student Special", 30.0, "Lunch", "Complete", verified = true),
+    CampusSpot("Maseno", "Siriba Cafeteria", "Main meal", 70.0, "Lunch", "Complete", verified = true),
+    CampusSpot("Maseno", "Maseno Town chafua", "Chapati + beans/ndengu", 90.0, "Lunch", "Complete", verified = true),
+    CampusSpot("Maseno", "Maseno Town chafua", "Ugali + sukuma + eggs/omena", 110.0, "Supper", "Complete", verified = true),
+    CampusSpot("Maseno", "Maseno Town chafua", "Chips", 100.0, "Lunch", "Starch", verified = true),
     CampusSpot("Maseno", "Maseno Town kibanda", "Githeri", 50.0, "Lunch", "Complete"),
     CampusSpot("Maseno", "Maseno Town kibanda", "Smocha", 70.0, "Lunch", "Complete"),
     CampusSpot("Maseno", "Maseno Town kibanda", "Ugali + sukuma", 60.0, "Supper", "Complete"),
