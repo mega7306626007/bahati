@@ -712,7 +712,7 @@ fun dashKey(key: String, arg: String, lang: AppLanguage): String {
 // ---------- Dashboard dictionary (part 1: topbar → pending rows) ----------
 // Single-arg (a) + second-arg (b) interpolation; brand names stay invariant.
 
-fun dashT(key: String, lang: AppLanguage, a: String = "", b: String = ""): String = when (key) {
+fun dashT(key: String, lang: AppLanguage, a: String = "", b: String = "", c: String = "", d: String = "", e: String = ""): String = when (key) {
     "hub_title" -> "PesaPlanner Hub ⚡"
     "tune" -> Copy4("Tune", "Rekebisha", "Tune", "Tune").pick(lang)
     "show" -> Copy4("Show", "Onyesha", "Show", "Show").pick(lang)
@@ -788,7 +788,107 @@ fun dashT(key: String, lang: AppLanguage, a: String = "", b: String = ""): Strin
     "confirm_btn" -> Copy4("Confirm", "Thibitisha", "Confirm", "Confirm").pick(lang)
     "saved_msg" -> Copy4("Saved to ledger.", "Imehifadhiwa kwenye leja.", "Imesaviwa kwa ledger.", "Saved.").pick(lang)
     "undo_btn" -> Copy4("Undo", "Tendua", "Undo", "Undo").pick(lang)
+    "drift_hidden" -> Copy4("Drift check: KSh ••••", "Ukaguzi: KSh ••••", "Drift check: KSh ••••", "••••").pick(lang)
+    "drift_sync" -> Copy4("Drift check: ledger matches SMS ✓", "Ukaguzi: leja inalingana na SMS ✓", "Drift check: ledger inamatch SMS ✓", "In sync ✓").pick(lang)
+    "drift_minor" -> Copy4("Drift check: KSh $a small gap — likely a fee or one unlogged row.", "Ukaguzi: KSh $a pengo dogo — labda ada au safu moja.", "Drift check: KSh $a gap ndogo — labda fee ama row moja.", "Gap $a — minor.").pick(lang)
+    "drift_major_high" -> Copy4("Drift check: KSh $a (ledger higher — spending missing?)", "Ukaguzi: KSh $a (leja juu — matumizi yamekosekana?)", "Drift check: KSh $a (ledger juu — spending inamiss?)", "Ledger higher $a?").pick(lang)
+    "drift_major_low" -> Copy4("Drift check: KSh $a (SMS higher — income missing?)", "Ukaguzi: KSh $a (SMS juu — kipato kimekosekana?)", "Drift check: KSh $a (SMS juu — income inamiss?)", "SMS higher $a?").pick(lang)
+    "reconcile_btn" -> Copy4("Reconcile KSh $a → ledger ⚖️", "Linganisha KSh $a → leja ⚖️", "Reconcile KSh $a → ledger ⚖️", "Fix $a ⚖️").pick(lang)
+    "reconcile_title" -> Copy4("Reconcile drift?", "Linganisha tofauti?", "Reconcile drift?", "Reconcile?").pick(lang)
+    "reconcile_body" -> Copy4("Ledger M-Pesa KSh $a vs SMS KSh $b. Books KSh $c as “Balance adjustment” $d.", "Leja M-Pesa KSh $a dhidi ya SMS KSh $b. Andika KSh $c kama “Balance adjustment” $d.", "Ledger M-Pesa KSh $a vs SMS KSh $b. Book KSh $c kama “Balance adjustment” $d.", "Ledger $a vs SMS $b.").pick(lang)
+    "reconcile_spend" -> Copy4("(spending).", "(matumizi).", "(spending).", ".").pick(lang)
+    "reconcile_income" -> Copy4("(income).", "(kipato).", "(income).", ".").pick(lang)
+    "reconciled" -> Copy4("Reconciled ✓", "Imelinganishwa ✓", "Imereconcile ✓", "Done ✓").pick(lang)
+    "book_it" -> Copy4("Book it", "Andika", "Book it", "Book.").pick(lang)
+    "cancel" -> Copy4("Cancel", "Ghairi", "Cancel", "Cancel").pick(lang)
+    "smart_analyzer" -> Copy4("Smart Analyzer 🧠", "Mchanganuzi 🧠", "Smart Analyzer 🧠", "Analyzer 🧠").pick(lang)
+    "weekday_breakdown" -> Copy4("Weekday Spending Breakdown", "Matumizi kwa Siku za Wiki", "Weekday Spending Breakdown", "By weekday").pick(lang)
+    "this_week" -> Copy4("This week", "Wiki hii", "Wiki hii", "Week").pick(lang)
+    "all_time" -> Copy4("All time", "Zote", "All time", "All").pick(lang)
+    "sem_runway" -> Copy4("Semester Runway 🛤️", "Kipimo cha Muhula 🛤️", "Semester Runway 🛤️", "Runway 🛤️").pick(lang)
+    "sem_starts" -> Copy4("Semester starts in $a days", "Muhula unaanza baada ya siku $a", "Sem inaanza after siku $a", "Starts in $a days").pick(lang)
+    "sem_ended" -> Copy4("Semester ended", "Muhula umeisha", "Sem imeisha", "Ended").pick(lang)
+    "sem_days_left" -> Copy4("$a days left in semester", "Siku $a zimebaki muhula", "Siku $a zimebaki sem", "$a days left").pick(lang)
+    "after_commit" -> Copy4("After commitments: $a", "Baada ya ahadi: $a", "After commitments: $a", "After: $a").pick(lang)
+    "safe_daily" -> Copy4("Safe daily runway: $a/day", "Kipimo salama cha kila siku: $a/siku", "Safe daily runway: $a/day", "$a/day safe").pick(lang)
+    "shortfall" -> Copy4("Shortfall: $a/day needed to cover the current gap", "Upungufu: $a/siku inahitajika kufunika pengo", "Shortfall: $a/day needed kufunika gap", "Need $a/day").pick(lang)
+    "sem_set_dates" -> Copy4("Set the actual semester start and end dates under More → University to see your semester runway.", "Weka tarehe halisi za mwanzo na mwisho wa muhula chini ya More → University uone kipimo chako.", "Weka actual sem dates kwa More → University uone runway yako.", "Set dates: More → University.").pick(lang)
+    "fee_bleed" -> Copy4("Fee bleed 💸", "Ada zinazovuja 💸", "Fee bleed 💸", "Fees 💸").pick(lang)
+    "fee_bleed_body" -> Copy4("KSh $a in carrier charges this month — batch withdrawals to cut it.", "KSh $a kwa ada za mitandao mwezi huu — kusanya uondoaji ili kuzipunguza.", "KSh $a kwa carrier charges hii mwezi — batch withdrawals kuikat.", "Fees $a — batch up.").pick(lang)
+    "spend_by_cat" -> Copy4("Spending by category", "Matumizi kwa kundi", "Spending by category", "By category").pick(lang)
+    "insights_title" -> Copy4("Spending Insights 💡", "Maarifa ya Matumizi 💡", "Spending Insights 💡", "Insights 💡").pick(lang)
+    "insights_sub" -> Copy4("Charts, trends and advice from your data", "Chati, mienendo na ushauri kutoka data yako", "Charts, trends na advice kutoka data yako", "Charts + advice").pick(lang)
+    "see_insights" -> Copy4("See insights", "Ona maarifa", "Ona insights", "View").pick(lang)
+    "tune_title" -> Copy4("Tune your home", "Rekebisha ukurasa", "Tune home", "Tune").pick(lang)
+    "tune_body" -> Copy4("Pick the sections you want to see.", "Chagua sehemu unazotaka kuona.", "Pick sections unataka kuona.", "Pick sections.").pick(lang)
+    "sec_safe" -> Copy4("Safe-to-spend", "Salama-kutumia", "Safe-to-spend", "Safe").pick(lang)
+    "sec_pending" -> Copy4("Pending approvals", "Idhini zinazosubiri", "Pending approvals", "Pending").pick(lang)
+    "sec_recent" -> Copy4("Recent activity", "Shughuli za hivi karibuni", "Recent activity", "Recent").pick(lang)
+    "done_btn" -> Copy4("Done", "Sawa", "Done", "Done").pick(lang)
+    "coach_t1" -> Copy4("1 · Log in seconds ⚡", "1 · Andika kwa sekunde ⚡", "1 · Log in seconds ⚡", "1 · Log ⚡").pick(lang)
+    "coach_t2" -> Copy4("2 · Approve, don't type ✅", "2 · Thibitisha, usiandike ✅", "2 · Approve, usitype ✅", "2 · Approve ✅").pick(lang)
+    "coach_t3" -> Copy4("3 · Spend what's safe 🎯", "3 · Tumia kilicho salama 🎯", "3 · Spend what's safe 🎯", "3 · Safe 🎯").pick(lang)
+    "coach_b1" -> Copy4("Tap + below for any expense. Amount, where, done — under 5 seconds.", "Gusa + hapa chini kwa matumizi yoyote. Kiasi, wapi, imekwisha — chini ya sekunde 5.", "Tap + hapa chini kwa any expense. Amount, wapi, done — under 5 seconds.", "+ for expenses.").pick(lang)
+    "coach_b2" -> Copy4("M-Pesa texts land here as pending. Sure ones confirm all at once — the rest get your eyes, one by one.", "SMS za M-Pesa huingia hapa kama zinazosubiri. Za uhakika thibitisha zote mara moja — zingine kwa macho yako, moja moja.", "M-Pesa texts huingia hapa kama pending. Sure ones confirm zote at once — zingine kwa macho yako, moja moja.", "Pending → confirm.").pick(lang)
+    "coach_b3" -> Copy4("Safe-to-spend is your one number: what's actually okay to use today.", "Salama-kutumia ndiyo namba yako moja: nini kiko sawa kutumia leo.", "Safe-to-spend ndiyo number yako moja: nini iko okay kutumia leo.", "One safe number.").pick(lang)
+    "skip_tour" -> Copy4("Skip tour", "Ruka ziara", "Skip tour", "Skip").pick(lang)
+    "next_btn" -> Copy4("Next", "Endelea", "Next", "Next").pick(lang)
+    "start_btn" -> Copy4("Start", "Anza", "Start", "Start").pick(lang)
+    "jump_to" -> Copy4("Jump to", "Ruka kwa", "Jump kwa", "Jump").pick(lang)
+    "open_label" -> Copy4("Open $a", "Fungua $a", "Fungua $a", "Open $a").pick(lang)
+    "motiv0" -> Copy4("Every coin saved is a step closer to your degree! 🎓", "Kila senti inayookolewa ni hatua karibu na shahada yako! 🎓", "Kila bob inayosave ni step karibu na degree yako! 🎓", "Save → degree! 🎓").pick(lang)
+    "motiv1" -> Copy4("Small cuts today, big freedom tomorrow. 💪", "Kupunguza kidogo leo, uhuru mkubwa kesho. 💪", "Small cuts leo, big freedom kesho. 💪", "Cut small, win big. 💪").pick(lang)
+    "motiv2" -> Copy4("Your future self will thank you for this decision. ✨", "Wewe wa baadaye atakushukuru kwa uamuzi huu. ✨", "Future self wako ataku-thank kwa hii decision. ✨", "Future you says thanks. ✨").pick(lang)
+    "motiv3" -> Copy4("Consistent small savings beat sporadic big wins. 🌟", "Akiba ndogo thabiti hushinda ushindi mkubwa wa hapa na pale. 🌟", "Consistent small savings hushinda sporadic big wins. 🌟", "Small + steady wins. 🌟").pick(lang)
+    "motiv4" -> Copy4("Don't let today's spending steal tomorrow's opportunities. 🚀", "Usiruhusu matumizi ya leo kuiba fursa za kesho. 🚀", "Usiruhusu spending ya leo kuiba opportunities za kesho. 🚀", "Protect tomorrow. 🚀").pick(lang)
+    "safe_title" -> Copy4("Safe to Spend 🛡️", "Salama Kutumia 🛡️", "Safe to Spend 🛡️", "Safe 🛡️").pick(lang)
+    "day_chip" -> Copy4("Day", "Siku", "Siku", "Day").pick(lang)
+    "week_chip" -> Copy4("Week", "Wiki", "Wiki", "Week").pick(lang)
+    "safe_anchor" -> Copy4("Based on M-Pesa KSh $a of KSh $b total (Recorded)", "Kulingana na M-Pesa KSh $a kati ya KSh $b jumla (Imerekodiwa)", "Based on M-Pesa KSh $a of KSh $b total (Recorded)", "M-Pesa $a / $b.").pick(lang)
+    "safe_set_budget" -> Copy4("Set a Daily budget or a monthly ALL budget on the Budget tab and I'll compute your allowance — including yesterday's rollover, plans and bills.", "Weka bajeti ya Kila Siku au ya mwezi ALL kwenye kichupo cha Bajeti nami nitahesabu posho yako — ikiwa ni pamoja na salio la jana, mipango na bili.", "Weka Daily budget ama monthly ALL kwa Budget tab nami nitacompute allowance yako — including rollover ya jana, plans na bills.", "Set Daily/ALL budget.").pick(lang)
+    "left_today" -> Copy4("left of KSh $a today", "zimebaki kati ya KSh $a leo", "zimebaki of KSh $a leo", "left of $a.").pick(lang)
+    "plans_keep_day" -> Copy4(" (KSh $a/day kept for plans)", " (KSh $a/siku zimehifadhiwa kwa mipango)", " (KSh $a/day zimekeepiwa plans)", " (plans $a).").pick(lang)
+    "left_week" -> Copy4("left of KSh $a this week", "zimebaki kati ya KSh $a wiki hii", "zimebaki of KSh $a hii wiki", "left of $a.").pick(lang)
+    "plans_keep_week" -> Copy4(" (plans keep KSh $a/week)", " (mipango huhifadhi KSh $a/wiki)", " (plans huhold KSh $a/week)", " (plans $a).").pick(lang)
+    "safe_row_target" -> Copy4("Daily target (budget pace, capped by flexible cash)", "Lengo la kila siku (mwendo wa bajeti, kikomo pesa rahisi)", "Daily target (budget pace, capped na flexible cash)", "Daily target").pick(lang)
+    "safe_row_pace" -> Copy4("Weekday pace (×$a today)", "Mwendo wa siku (×$a leo)", "Weekday pace (×$a leo)", "Pace ×$a").pick(lang)
+    "safe_row_spent_month" -> Copy4("Spent this month", "Imetumika mwezi huu", "Imespendiwa hii mwezi", "Spent").pick(lang)
+    "safe_row_yesterday" -> Copy4("Yesterday", "Jana", "Jana", "Yesterday").pick(lang)
+    "safe_row_plans" -> Copy4("Plans reserve", "Akiba ya mipango", "Reserve ya plans", "Plans").pick(lang)
+    "safe_row_bills" -> Copy4("Bills share", "Sehemu ya bili", "Share ya mabill", "Bills").pick(lang)
+    "safe_row_spent_today" -> Copy4("Spent today", "Imetumika leo", "Imespendiwa leo", "Today").pick(lang)
+    "safe_fresh" -> Copy4("No spending logged yet — full KSh $a is available today.", "Hakuna matumizi yaliyorekodiwa bado — KSh $a yote inapatikana leo.", "Hakuna spending imeloggiwa bado — full KSh $a iko available leo.", "Full $a today.").pick(lang)
+    "safe_over" -> Copy4("KSh $a over pace (KSh $b of KSh $c with $d left) — essentials only. 🛑", "KSh $a zaidi ya mwendo (KSh $b kati ya KSh $c na $d zimebaki) — muhimu tu. 🛑", "KSh $a over pace (KSh $b of KSh $c na $d zimebaki) — essentials only. 🛑", "Over by $a. 🛑").pick(lang)
+    "safe_tight" -> Copy4("KSh $a left — prioritize: Food KSh $b + essentials KSh $c. 💪", "KSh $a zimebaki — weka kipaumbele: Chakula KSh $b + muhimu KSh $c. 💪", "KSh $a zimebaki — prioritize: Food KSh $b + essentials KSh $c. 💪", "$a left. 💪").pick(lang)
+    "safe_onpace" -> Copy4("KSh $a of KSh $b with $c left — on pace! 🎉 Today you can spend KSh $d.", "KSh $a kati ya KSh $b na $c zimebaki — uko sawa! 🎉 Leo unaweza kutumia KSh $d.", "KSh $a of KSh $b na $c zimebaki — on pace! 🎉 Leo unaweza kuspend KSh $d.", "On pace! $d today. 🎉").pick(lang)
+    "safe_overmonth" -> Copy4("KSh $a of KSh $b with $c left — over pace. Tighten today to KSh $d.$e", "KSh $a kati ya KSh $b na $c zimebaki — umevuka mwendo. Bana leo hadi KSh $d.$e", "KSh $a of KSh $b na $c zimebaki — over pace. Tighten leo hadi KSh $d.$e", "Over. Today: $d.").pick(lang)
+    "safe_paused_day" -> Copy4(" You've passed today's allowance — pause till tomorrow. ⏸️", " Umevuka posho ya leo — pumzika hadi kesho. ⏸️", " Umepitisha allowance ya leo — pause hadi kesho. ⏸️", " Paused till tomorrow. ⏸️").pick(lang)
+    "safe_unusual" -> Copy4("⚠️ Unusual day: KSh $a already vs KSh $b expected — pause non-essentials. ⏸️", "⚠️ Siku isiyo ya kawaida: KSh $a tayari dhidi ya KSh $b inayotarajiwa — pumzisha yasiyo muhimu. ⏸️", "⚠️ Siku weird: KSh $a already vs KSh $b expected — pause non-essentials. ⏸️", "⚠️ Unusual: $a vs $b.").pick(lang)
+    "safe_week_none" -> Copy4("No weekly target set — add a Weekly budget or monthly ALL on the Budget tab and I'll pace it. 🎯", "Hakuna lengo la wiki — weka bajeti ya Wiki au ALL ya mwezi kwenye Bajeti nami nitaiweka sawa. 🎯", "Hakuna weekly target — weka Weekly budget ama monthly ALL kwa Budget tab nami nitaipace. 🎯", "Set Weekly/ALL. 🎯").pick(lang)
+    "safe_week_tight" -> Copy4("KSh $a this week (~KSh $b/day) — prioritize: Food KSh $c + essentials KSh $d. 💪", "KSh $a wiki hii (~KSh $b/siku) — weka kipaumbele: Chakula KSh $c + muhimu KSh $d. 💪", "KSh $a hii wiki (~KSh $b/day) — prioritize: Food KSh $c + essentials KSh $d. 💪", "$a this week. 💪").pick(lang)
+    "safe_week_good" -> Copy4("Last week cost KSh $a vs KSh $b target — nice! 🎉 This week you can spend KSh $c.", "Wiki iliyopita iligharimu KSh $a dhidi ya KSh $b — nzuri! 🎉 Wiki hii unaweza kutumia KSh $c.", "Last week ilicost KSh $a vs KSh $b target — nice! 🎉 Hii wiki unaweza kuspend KSh $c.", "Nice! $c this week. 🎉").pick(lang)
+    "safe_week_over" -> Copy4("Last week went KSh $a over (KSh $b vs KSh $c). This week tighten to KSh $d.$e", "Wiki iliyopita ilizidi KSh $a (KSh $b dhidi ya KSh $c). Wiki hii bana hadi KSh $d.$e", "Last week ilienda KSh $a over (KSh $b vs KSh $c). Hii wiki tighten hadi KSh $d.$e", "Over $a. This week: $d.").pick(lang)
+    "safe_paused_week" -> Copy4(" You've passed the weekly allowance — pause till next week. ⏸️", " Umevuka posho ya wiki — pumzika hadi wiki ijayo. ⏸️", " Umepitisha weekly allowance — pause hadi next week. ⏸️", " Paused a week. ⏸️").pick(lang)
+    "budgets_title" -> Copy4("Budgets", "Bajeti", "Budget", "Budget").pick(lang)
+    "safe_what" -> Copy4("What is safe-to-spend?", "Salama-kutumia ni nini?", "Safe-to-spend ni nini?", "Safe?").pick(lang)
+    "safe_what_body" -> Copy4("Income minus budgets, bills due and goals — the amount actually okay to use today. It moves as you log spending.", "Kipato ukiondoa bajeti, bili zinazodaiwa na malengo — kiasi kilicho sawa kutumia leo. Hubadilika unapoandika matumizi.", "Income minus budgets, bills due na goals — doh actually okay kutumia leo. Hubadilika ukilog spending.", "Income − budgets − bills − goals.").pick(lang)
+    "rail_ledger" -> Copy4("Ledger", "Leja", "Ledger", "Ledger").pick(lang)
+    "rail_buddy" -> Copy4("Buddy", "Buddy", "Buddy", "Buddy").pick(lang)
     else -> a.ifBlank { key }
+}
+
+/** Weekday abbreviations follow the app language; keys stay English. */
+fun weekdayShort(day: String, lang: AppLanguage): String {
+    if (lang != AppLanguage.KISWAHILI) return day
+    return when (day) {
+        "Mon" -> "JTT"
+        "Tue" -> "JNN"
+        "Wed" -> "JTN"
+        "Thu" -> "ALH"
+        "Fri" -> "IJM"
+        "Sat" -> "JMS"
+        else -> "JMP"
+    }
 }
 
 // ---------- Bottom tabs + More menu (whole-app language starts here) ----------

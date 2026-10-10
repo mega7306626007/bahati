@@ -48,7 +48,8 @@ fun SafeToSpendCard(
     // M-Pesa anchor: safe guidance reads against the pocket you actually
     // spend from. Formula unchanged — this only labels the anchor.
     mpesaCash: Double? = null,
-    totalCash: Double? = null
+    totalCash: Double? = null,
+    lang: com.pesaflow.app.data.models.AppLanguage = com.pesaflow.app.data.models.AppLanguage.ENGLISH
 ) {
     val nowMs = System.currentTimeMillis()
     val budgetLimits = safeSpendBudgetLimits(budgets, nowMs)
@@ -74,16 +75,16 @@ fun SafeToSpendCard(
             verticalArrangement = Arrangement.spacedBy(com.pesaflow.app.ui.theme.ppSpacing.sm)
         ) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Safe to Spend 🛡️", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text(com.pesaflow.app.ui.language.dashT("safe_title", lang), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("Day", "Week").forEach { m ->
-                        FilterChip(selected = mode == m, onClick = { mode = m }, label = { Text(m) })
+                    listOf("Day" to com.pesaflow.app.ui.language.dashT("day_chip", lang), "Week" to com.pesaflow.app.ui.language.dashT("week_chip", lang)).forEach { (m, label) ->
+                        FilterChip(selected = mode == m, onClick = { mode = m }, label = { Text(label) })
                     }
                 }
             }
             if (mpesaCash != null && totalCash != null && !hide) {
                 Text(
-                    "Based on M-Pesa KSh ${mpesaCash.toInt()} of KSh ${totalCash.toInt()} total (Recorded)",
+                    com.pesaflow.app.ui.language.dashT("safe_anchor", lang, mpesaCash.toInt().toString(), totalCash.toInt().toString()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -91,7 +92,7 @@ fun SafeToSpendCard(
             Spacer(modifier = Modifier.height(8.dp))
             if (monthly == null && dailyExplicit == null && weeklyExplicit == null) {
                 Text(
-                    "Set a Daily budget or a monthly ALL budget on the Budget tab and I'll compute your allowance — including yesterday's rollover, plans and bills.",
+                    com.pesaflow.app.ui.language.dashT("safe_set_budget", lang),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -165,46 +166,46 @@ fun SafeToSpendCard(
                             color = if (left < 0) com.pesaflow.app.ui.theme.ppColors.error else com.pesaflow.app.ui.theme.ppColors.textPrimary
                         )
                         Text(
-                            "left of KSh $allowance today" + if (planDaily > 0) " (KSh $planDaily/day kept for plans)" else "",
+                            com.pesaflow.app.ui.language.dashT("left_today", lang, allowance.toString()) + if (planDaily > 0) com.pesaflow.app.ui.language.dashT("plans_keep_day", lang, planDaily.toString()) else "",
                             style = com.pesaflow.app.ui.theme.ppTypography.bodySmall,
                             color = com.pesaflow.app.ui.theme.ppColors.textTertiary
                         )
                     }
                 }
             Spacer(modifier = Modifier.height(8.dp))
-            SafeMathRow(label = "Daily target (budget pace, capped by flexible cash)", value = "KSh $dailyTarget")
+            SafeMathRow(label = com.pesaflow.app.ui.language.dashT("safe_row_target", lang), value = "KSh $dailyTarget")
             if (weekdayFactor != null) {
                 SafeMathRow(
-                    label = "Weekday pace (×${"%.1f".format(weekdayFactor)} today)",
+                    label = com.pesaflow.app.ui.language.dashT("safe_row_pace", lang, "%.1f".format(weekdayFactor)),
                     value = "KSh ${(dailyTarget * weekdayFactor).toInt()}"
                 )
             }
-            SafeMathRow(label = "Spent this month", value = "−KSh ${spentMonth.toInt()}")
-            SafeMathRow(label = "Yesterday", value = "−KSh $yesterdaySpend")
-            SafeMathRow(label = "Plans reserve", value = "−KSh $planDaily")
-            SafeMathRow(label = "Bills share", value = "−KSh $billDaily")
-            SafeMathRow(label = "Spent today", value = "−KSh $todaySpend")
+            SafeMathRow(label = com.pesaflow.app.ui.language.dashT("safe_row_spent_month", lang), value = "−KSh ${spentMonth.toInt()}")
+            SafeMathRow(label = com.pesaflow.app.ui.language.dashT("safe_row_yesterday", lang), value = "−KSh $yesterdaySpend")
+            SafeMathRow(label = com.pesaflow.app.ui.language.dashT("safe_row_plans", lang), value = "−KSh $planDaily")
+            SafeMathRow(label = com.pesaflow.app.ui.language.dashT("safe_row_bills", lang), value = "−KSh $billDaily")
+            SafeMathRow(label = com.pesaflow.app.ui.language.dashT("safe_row_spent_today", lang), value = "−KSh $todaySpend")
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 when {
                     todaySpend == 0 && spentMonth == 0.0 ->
-                            "No spending logged yet — full KSh $allowance is available today."
+                            com.pesaflow.app.ui.language.dashT("safe_fresh", lang, allowance.toString())
                         allowance <= 0 ->
-                            "KSh ${-fig.remaining.toInt()} over pace (KSh ${spentMonth.toInt()} of KSh ${monthlyLimit.toInt()} with ${fig.daysLeft}d left) — essentials only. 🛑"
+                            com.pesaflow.app.ui.language.dashT("safe_over", lang, (-fig.remaining.toInt()).toString(), spentMonth.toInt().toString(), monthlyLimit.toInt().toString(), "${fig.daysLeft}d")
                         allowance < 100 ->
-                            "KSh $allowance left — prioritize: Food KSh ${(allowance * 0.8).toInt()} + essentials KSh ${(allowance * 0.2).toInt()}. 💪"
+                            com.pesaflow.app.ui.language.dashT("safe_tight", lang, allowance.toString(), (allowance * 0.8).toInt().toString(), (allowance * 0.2).toInt().toString())
                         spentMonth <= expectedToDate ->
-                            "KSh ${spentMonth.toInt()} of KSh ${monthlyLimit.toInt()} with ${fig.daysLeft}d left — on pace! 🎉 Today you can spend KSh $allowance."
+                            com.pesaflow.app.ui.language.dashT("safe_onpace", lang, spentMonth.toInt().toString(), monthlyLimit.toInt().toString(), "${fig.daysLeft}d", allowance.toString())
                         else ->
-                            "KSh ${spentMonth.toInt()} of KSh ${monthlyLimit.toInt()} with ${fig.daysLeft}d left — over pace. Tighten today to KSh $allowance.$planNote"
-                    } + if (left < 0 && allowance > 0) " You've passed today's allowance — pause till tomorrow. ⏸️" else "",
+                            com.pesaflow.app.ui.language.dashT("safe_overmonth", lang, spentMonth.toInt().toString(), monthlyLimit.toInt().toString(), "${fig.daysLeft}d", allowance.toString(), planNote)
+                    } + if (left < 0 && allowance > 0) com.pesaflow.app.ui.language.dashT("safe_paused_day", lang) else "",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 if (isUnusualDay(todaySpend.toDouble(), dailyTarget * (weekdayFactor ?: 1.0))) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "⚠️ Unusual day: KSh $todaySpend already vs KSh ${(dailyTarget * (weekdayFactor ?: 1.0)).toInt()} expected — pause non-essentials. ⏸️",
+                        com.pesaflow.app.ui.language.dashT("safe_unusual", lang, todaySpend.toString(), (dailyTarget * (weekdayFactor ?: 1.0)).toInt().toString()),
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.error
@@ -246,7 +247,7 @@ fun SafeToSpendCard(
                             color = if (weekLeft < 0) com.pesaflow.app.ui.theme.ppColors.error else com.pesaflow.app.ui.theme.ppColors.textPrimary
                         )
                         Text(
-                            "left of KSh $weekAllowance this week" + if (planDaily > 0) " (plans keep KSh ${planDaily * 7}/week)" else "",
+                            com.pesaflow.app.ui.language.dashT("left_week", lang, weekAllowance.toString()) + if (planDaily > 0) com.pesaflow.app.ui.language.dashT("plans_keep_week", lang, (planDaily * 7).toString()) else "",
                             style = com.pesaflow.app.ui.theme.ppTypography.bodySmall,
                             color = com.pesaflow.app.ui.theme.ppColors.textTertiary
                         )
@@ -256,14 +257,14 @@ fun SafeToSpendCard(
                 Text(
                     when {
                         weekAllowance <= 0 ->
-                            "No weekly target set — add a Weekly budget or monthly ALL on the Budget tab and I'll pace it. 🎯"
+                            com.pesaflow.app.ui.language.dashT("safe_week_none", lang)
                         weekAllowance < 100 * 7 ->
-                            "KSh $weekAllowance this week (~KSh ${(weekAllowance / 7).toInt()}/day) — prioritize: Food KSh ${(weekAllowance * 0.6).toInt()} + essentials KSh ${(weekAllowance * 0.4).toInt()}. 💪"
+                            com.pesaflow.app.ui.language.dashT("safe_week_tight", lang, weekAllowance.toString(), (weekAllowance / 7).toInt().toString(), (weekAllowance * 0.6).toInt().toString(), (weekAllowance * 0.4).toInt().toString())
                         prevWeekSpend <= weekTarget ->
-                            "Last week cost KSh $prevWeekSpend vs KSh $weekTarget target — nice! 🎉 This week you can spend KSh $weekAllowance."
+                            com.pesaflow.app.ui.language.dashT("safe_week_good", lang, prevWeekSpend.toString(), weekTarget.toString(), weekAllowance.toString())
                         else ->
-                            "Last week went KSh ${-weekRollover} over (KSh $prevWeekSpend vs KSh $weekTarget). This week tighten to KSh $weekAllowance.$planNote"
-                    } + if (weekLeft < 0 && weekAllowance > 0) " You've passed the weekly allowance — pause till next week. ⏸️" else "",
+                            com.pesaflow.app.ui.language.dashT("safe_week_over", lang, (-weekRollover).toString(), prevWeekSpend.toString(), weekTarget.toString(), weekAllowance.toString(), planNote)
+                    } + if (weekLeft < 0 && weekAllowance > 0) com.pesaflow.app.ui.language.dashT("safe_paused_week", lang) else "",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )

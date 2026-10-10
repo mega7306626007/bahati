@@ -794,14 +794,15 @@ fun DashboardScreen(
                                 com.pesaflow.app.data.money.evaluateDrift(wamt, mpesaBal)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                if (hideBalances) "Drift check: KSh ••••"
+                                if (hideBalances) com.pesaflow.app.ui.language.dashT("drift_hidden", currentLanguage)
                                 else when (zone) {
                                     com.pesaflow.app.data.money.DriftZone.IN_SYNC ->
-                                        "Drift check: ledger matches SMS ✓"
+                                        com.pesaflow.app.ui.language.dashT("drift_sync", currentLanguage)
                                     com.pesaflow.app.data.money.DriftZone.MINOR ->
-                                        "Drift check: KSh ${kotlin.math.abs(drift).toInt()} small gap — likely a fee or one unlogged row."
+                                        com.pesaflow.app.ui.language.dashT("drift_minor", currentLanguage, kotlin.math.abs(drift).toInt().toString())
                                     com.pesaflow.app.data.money.DriftZone.MAJOR ->
-                                        "Drift check: KSh ${kotlin.math.abs(drift).toInt()} " + (if (drift > 0) "(ledger higher — spending missing?)" else "(SMS higher — income missing?)")
+                                        if (drift > 0) com.pesaflow.app.ui.language.dashT("drift_major_high", currentLanguage, kotlin.math.abs(drift).toInt().toString())
+                                        else com.pesaflow.app.ui.language.dashT("drift_major_low", currentLanguage, kotlin.math.abs(drift).toInt().toString())
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.SemiBold,
@@ -814,7 +815,7 @@ fun DashboardScreen(
                             )
                             if (!hideBalances && zone != com.pesaflow.app.data.money.DriftZone.IN_SYNC) {
                                 TextButton(onClick = { showReconcile = true }) {
-                                    Text("Reconcile KSh ${kotlin.math.abs(drift).toInt()} → ledger ⚖️")
+                                    Text(com.pesaflow.app.ui.language.dashT("reconcile_btn", currentLanguage, kotlin.math.abs(drift).toInt().toString()))
                                 }
                             }
                         }
@@ -823,12 +824,15 @@ fun DashboardScreen(
                             val drift = mpesaBal - wamt
                             AlertDialog(
                                 onDismissRequest = { showReconcile = false },
-                                title = { Text("Reconcile drift?") },
+                                title = { Text(com.pesaflow.app.ui.language.dashT("reconcile_title", currentLanguage)) },
                                 text = {
                                     Text(
-                                        "Ledger M-Pesa KSh ${mpesaBal.toInt()} vs SMS KSh ${wamt.toInt()}. " +
-                                            "Books KSh ${kotlin.math.abs(drift).toInt()} as “Balance adjustment” " +
-                                            (if (drift > 0) "(spending)." else "(income).")
+                                        com.pesaflow.app.ui.language.dashT(
+                                            "reconcile_body", currentLanguage,
+                                            mpesaBal.toInt().toString(), wamt.toInt().toString(),
+                                            kotlin.math.abs(drift).toInt().toString(),
+                                            if (drift > 0) com.pesaflow.app.ui.language.dashT("reconcile_spend", currentLanguage) else com.pesaflow.app.ui.language.dashT("reconcile_income", currentLanguage)
+                                        )
                                     )
                                 },
                                 confirmButton = {
@@ -837,11 +841,11 @@ fun DashboardScreen(
                                         showReconcile = false
                                         scope.launch {
                                             snackbar.currentSnackbarData?.dismiss()
-                                            snackbar.showSnackbar("Reconciled ✓", duration = SnackbarDuration.Short)
+                                            snackbar.showSnackbar(com.pesaflow.app.ui.language.dashT("reconciled", currentLanguage), duration = SnackbarDuration.Short)
                                         }
-                                    }) { Text("Book it") }
+                                    }) { Text(com.pesaflow.app.ui.language.dashT("book_it", currentLanguage)) }
                                 },
-                                dismissButton = { TextButton(onClick = { showReconcile = false }) { Text("Cancel") } }
+                                dismissButton = { TextButton(onClick = { showReconcile = false }) { Text(com.pesaflow.app.ui.language.dashT("cancel", currentLanguage)) } }
                             )
                         }
                     }
@@ -851,7 +855,7 @@ fun DashboardScreen(
 
             // Feature shortcuts: icon rail, not another list — distinct from More.
             item {
-                ShortcutRail(onNavigate = onNavigate)
+                ShortcutRail(onNavigate = onNavigate, lang = currentLanguage)
             }
 
 
@@ -954,11 +958,11 @@ fun DashboardScreen(
 
             // Smart Analyzer Tab - Weekday breakdown + Semester Runway + Motivational messages
             val motivationalMessages = listOf(
-                "Every coin saved is a step closer to your degree! 🎓",
-                "Small cuts today, big freedom tomorrow. 💪",
-                "Your future self will thank you for this decision. ✨",
-                "Consistent small savings beat sporadic big wins. 🌟",
-                "Don't let today's spending steal tomorrow's opportunities. 🚀"
+                com.pesaflow.app.ui.language.dashT("motiv0", currentLanguage),
+                com.pesaflow.app.ui.language.dashT("motiv1", currentLanguage),
+                com.pesaflow.app.ui.language.dashT("motiv2", currentLanguage),
+                com.pesaflow.app.ui.language.dashT("motiv3", currentLanguage),
+                com.pesaflow.app.ui.language.dashT("motiv4", currentLanguage)
             )
             val todayCal = Calendar.getInstance()
             val todayDayStr = when (todayCal.get(Calendar.DAY_OF_WEEK)) {
@@ -979,7 +983,7 @@ fun DashboardScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Smart Analyzer 🧠", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Text(com.pesaflow.app.ui.language.dashT("smart_analyzer", currentLanguage), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.height(12.dp))
                         // Weekday spending breakdown — this week by default,
                         // all-time only on request.
@@ -988,10 +992,10 @@ fun DashboardScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Weekday Spending Breakdown", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
+                            Text(com.pesaflow.app.ui.language.dashT("weekday_breakdown", currentLanguage), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                FilterChip(selected = weekdayScope == "week", onClick = { weekdayScope = "week" }, label = { Text("This week") })
-                                FilterChip(selected = weekdayScope == "all", onClick = { weekdayScope = "all" }, label = { Text("All time") })
+                                FilterChip(selected = weekdayScope == "week", onClick = { weekdayScope = "week" }, label = { Text(com.pesaflow.app.ui.language.dashT("this_week", currentLanguage)) })
+                                FilterChip(selected = weekdayScope == "all", onClick = { weekdayScope = "all" }, label = { Text(com.pesaflow.app.ui.language.dashT("all_time", currentLanguage)) })
                             }
                         }
                         Spacer(modifier = Modifier.height(6.dp))
@@ -1010,7 +1014,7 @@ fun DashboardScreen(
                                         .padding(6.dp)
                                 ) {
                                     Column {
-                                        Text(day, style = MaterialTheme.typography.bodySmall, color = if (isToday) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
+                                        Text(com.pesaflow.app.ui.language.weekdayShort(day, currentLanguage), style = MaterialTheme.typography.bodySmall, color = if (isToday) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
                                         Text("KSh ${spent.toInt()}", style = MaterialTheme.typography.bodySmall, color = if (isToday) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
@@ -1018,7 +1022,7 @@ fun DashboardScreen(
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         // Semester runway
-                        Text("Semester Runway 🛤️", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
+                        Text(com.pesaflow.app.ui.language.dashT("sem_runway", currentLanguage), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
                         Spacer(modifier = Modifier.height(4.dp))
                         val runway = semesterRunway
                         if (runway != null) {
@@ -1031,27 +1035,31 @@ fun DashboardScreen(
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
                                 Text(
                                     when {
-                                        runway.isUpcoming -> "Semester starts in ${runway.daysUntilStart} days"
-                                        runway.isEnded -> "Semester ended"
-                                        else -> "${runway.daysRemaining} days left in semester"
+                                        runway.isUpcoming -> com.pesaflow.app.ui.language.dashT("sem_starts", currentLanguage, runway.daysUntilStart.toString())
+                                        runway.isEnded -> com.pesaflow.app.ui.language.dashT("sem_ended", currentLanguage)
+                                        else -> com.pesaflow.app.ui.language.dashT("sem_days_left", currentLanguage, runway.daysRemaining.toString())
                                     },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    "After commitments: " + if (hideBalances) "••••" else
-                                        com.pesaflow.app.data.finance.MoneyFormatter.compact(
+                                    com.pesaflow.app.ui.language.dashT(
+                                        "after_commit", currentLanguage,
+                                        if (hideBalances) "••••" else com.pesaflow.app.data.finance.MoneyFormatter.compact(
                                             com.pesaflow.app.data.finance.Money.of(runway.availableAfterCommitments)
-                                        ),
+                                        )
+                                    ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = if (runway.availableAfterCommitments < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 if (safeDaily != null) {
                                     Text(
-                                        "Safe daily runway: " + if (hideBalances) "••••" else
-                                            com.pesaflow.app.data.finance.MoneyFormatter.compact(
+                                        com.pesaflow.app.ui.language.dashT(
+                                            "safe_daily", currentLanguage,
+                                            if (hideBalances) "••••" else com.pesaflow.app.data.finance.MoneyFormatter.compact(
                                                 com.pesaflow.app.data.finance.Money.of(safeDaily)
-                                            ) + "/day",
+                                            )
+                                        ),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary
@@ -1059,17 +1067,19 @@ fun DashboardScreen(
                                 }
                                 if (dailyShortfall != null) {
                                     Text(
-                                        "Shortfall: " + if (hideBalances) "••••" else
-                                            com.pesaflow.app.data.finance.MoneyFormatter.compact(
+                                        com.pesaflow.app.ui.language.dashT(
+                                            "shortfall", currentLanguage,
+                                            if (hideBalances) "••••" else com.pesaflow.app.data.finance.MoneyFormatter.compact(
                                                 com.pesaflow.app.data.finance.Money.of(dailyShortfall)
-                                            ) + "/day needed to cover the current gap",
+                                            )
+                                        ),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.error
                                     )
                                 }
                             }
                         } else {
-                            Text("Set the actual semester start and end dates under More → University to see your semester runway.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(com.pesaflow.app.ui.language.dashT("sem_set_dates", currentLanguage), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         // Motivational message
@@ -1089,8 +1099,8 @@ fun DashboardScreen(
             if ("safe" !in hiddenSections) {
             item {
                 ExplainChip(
-                    label = "What is safe-to-spend?",
-                    body = "Income minus budgets, bills due and goals — the amount actually okay to use today. It moves as you log spending."
+                    label = com.pesaflow.app.ui.language.dashT("safe_what", currentLanguage),
+                    body = com.pesaflow.app.ui.language.dashT("safe_what_body", currentLanguage)
                 )
             }
             item {
@@ -1102,7 +1112,8 @@ fun DashboardScreen(
                     flexibleCash = financialSnapshot.flexible.toDouble(),
                     hide = hideBalances,
                     mpesaCash = mpesaBal,
-                    totalCash = availableBalance
+                    totalCash = availableBalance,
+                    lang = currentLanguage
                 )
             }
             }
@@ -1308,9 +1319,9 @@ fun DashboardScreen(
                 if (monthFees > 0) {
                     PpCard(kind = PpCardKind.LARGE) {
                         Column(verticalArrangement = Arrangement.spacedBy(ppSpacing.md)) {
-                            PpSectionHeader(title = "Fee bleed 💸")
+                            PpSectionHeader(title = com.pesaflow.app.ui.language.dashT("fee_bleed", currentLanguage))
                             Text(
-                                "KSh ${monthFees.toInt()} in carrier charges this month — batch withdrawals to cut it.",
+                                com.pesaflow.app.ui.language.dashT("fee_bleed_body", currentLanguage, monthFees.toInt().toString()),
                                 style = ppTypography.bodyMedium,
                                 color = ppColors.textPrimary
                             )
@@ -1329,7 +1340,7 @@ fun DashboardScreen(
                     if (catSpending.isNotEmpty()) {
                         PpCard(kind = PpCardKind.LARGE) {
                             Column(verticalArrangement = Arrangement.spacedBy(ppSpacing.md)) {
-                                PpSectionHeader(title = "Spending by category")
+                                PpSectionHeader(title = com.pesaflow.app.ui.language.dashT("spend_by_cat", currentLanguage))
                                 val maxCat = catSpending.firstOrNull()?.value ?: 1.0
                                 catSpending.forEach { (cat, amt) ->
                                     val barWidth = (amt / maxCat).coerceIn(0.0, 1.0).toFloat()
@@ -1364,15 +1375,15 @@ fun DashboardScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Spending Insights 💡", style = ppTypography.h3, color = ppColors.textPrimary)
+                            Text(com.pesaflow.app.ui.language.dashT("insights_title", currentLanguage), style = ppTypography.h3, color = ppColors.textPrimary)
                             Text(
-                                "Charts, trends and advice from your data",
+                                com.pesaflow.app.ui.language.dashT("insights_sub", currentLanguage),
                                 style = ppTypography.bodySmall,
                                 color = ppColors.textTertiary
                             )
                         }
                         Spacer(modifier = Modifier.width(ppSpacing.md))
-                        com.pesaflow.app.ui.theme.PpSecondaryButton(text = "See insights", onClick = { onNavigate(NavRoutes.INSIGHTS) })
+                        com.pesaflow.app.ui.theme.PpSecondaryButton(text = com.pesaflow.app.ui.language.dashT("see_insights", currentLanguage), onClick = { onNavigate(NavRoutes.INSIGHTS) })
                     }
                 }
             }
@@ -1386,16 +1397,20 @@ fun DashboardScreen(
     if (showCustomize) {
         AlertDialog(
             onDismissRequest = { showCustomize = false },
-            title = { Text("Tune your home", fontWeight = FontWeight.Bold) },
+            title = { Text(com.pesaflow.app.ui.language.dashT("tune_title", currentLanguage), fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Pick the sections you want to see.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    listOf("safe" to "Safe-to-spend", "pending" to "Pending approvals", "recent" to "Recent activity").forEach { (key, label) ->
+                    Text(com.pesaflow.app.ui.language.dashT("tune_body", currentLanguage), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    listOf(
+                        "safe" to com.pesaflow.app.ui.language.dashT("sec_safe", currentLanguage),
+                        "pending" to com.pesaflow.app.ui.language.dashT("sec_pending", currentLanguage),
+                        "recent" to com.pesaflow.app.ui.language.dashT("sec_recent", currentLanguage)
+                    ).forEach { (key, label) ->
                         FilterChip(selected = key !in hiddenSections, onClick = { viewModel.toggleSection(key) }, label = { Text(label) })
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showCustomize = false }) { Text("Done") } }
+            confirmButton = { TextButton(onClick = { showCustomize = false }) { Text(com.pesaflow.app.ui.language.dashT("done_btn", currentLanguage)) } }
         )
     }
     // Coach marks: log → approve → safe-spend. Dismissed forever after step 3.
@@ -1403,14 +1418,14 @@ fun DashboardScreen(
     // show nothing rather than flashing the tour at opted-out users.
     if (coachDoneByPrefs == false && coachStep < 3) {
         val coachTitle = when (coachStep) {
-            0 -> "1 · Log in seconds ⚡"
-            1 -> "2 · Approve, don't type ✅"
-            else -> "3 · Spend what's safe 🎯"
+            0 -> com.pesaflow.app.ui.language.dashT("coach_t1", currentLanguage)
+            1 -> com.pesaflow.app.ui.language.dashT("coach_t2", currentLanguage)
+            else -> com.pesaflow.app.ui.language.dashT("coach_t3", currentLanguage)
         }
         val coachBody = when (coachStep) {
-            0 -> "Tap + below for any expense. Amount, where, done — under 5 seconds."
-            1 -> "M-Pesa texts land here as pending. Sure ones confirm all at once — the rest get your eyes, one by one."
-            else -> "Safe-to-spend is your one number: what's actually okay to use today."
+            0 -> com.pesaflow.app.ui.language.dashT("coach_b1", currentLanguage)
+            1 -> com.pesaflow.app.ui.language.dashT("coach_b2", currentLanguage)
+            else -> com.pesaflow.app.ui.language.dashT("coach_b3", currentLanguage)
         }
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)), contentAlignment = Alignment.BottomCenter) {
             Card(Modifier.fillMaxWidth().padding(24.dp)) {
@@ -1418,11 +1433,11 @@ fun DashboardScreen(
                     Text(coachTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(coachBody, style = MaterialTheme.typography.bodyMedium)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        TextButton(onClick = { scope.launch { AppPrefs.setCoachDone(coachContext) }; coachStep = 99 }) { Text("Skip tour") }
+                        TextButton(onClick = { scope.launch { AppPrefs.setCoachDone(coachContext) }; coachStep = 99 }) { Text(com.pesaflow.app.ui.language.dashT("skip_tour", currentLanguage)) }
                         Button(onClick = {
                             if (coachStep >= 2) { scope.launch { AppPrefs.setCoachDone(coachContext) }; coachStep = 99 }
                             else coachStep++
-                        }) { Text(if (coachStep >= 2) "Start" else "Next") }
+                        }) { Text(if (coachStep >= 2) com.pesaflow.app.ui.language.dashT("start_btn", currentLanguage) else com.pesaflow.app.ui.language.dashT("next_btn", currentLanguage)) }
                     }
                 }
             }
@@ -1435,20 +1450,20 @@ fun DashboardScreen(
 // Horizontal feature rail: glanceable icons with labels — deliberately not a
 // list like More. Every icon is a real button for screen readers.
 @Composable
-private fun ShortcutRail(onNavigate: (String) -> Unit) {
+private fun ShortcutRail(onNavigate: (String) -> Unit, lang: com.pesaflow.app.data.models.AppLanguage) {
     val shortcuts = listOf(
-        Triple(NavRoutes.TRANSACTIONS, "Ledger", Icons.Filled.List),
-        Triple(NavRoutes.BUDGETS, "Budgets", Icons.Filled.Star),
-        Triple(NavRoutes.SAVINGS, "Savings", Icons.Filled.Savings),
-        Triple(NavRoutes.BILLS, "Bills", Icons.Filled.Home),
-        Triple(NavRoutes.MEALS, "Meals", Icons.Filled.Favorite),
-        Triple(NavRoutes.REPORTS, "Reports", Icons.Filled.Info),
-        Triple(NavRoutes.NETWORTH, "Net Worth", Icons.Filled.AccountBox),
-        Triple(NavRoutes.BUDDY, "Buddy", Icons.Filled.Face),
-        Triple(NavRoutes.REVIEW, "Review", Icons.Filled.CheckCircle)
+        Triple(NavRoutes.TRANSACTIONS, com.pesaflow.app.ui.language.dashT("rail_ledger", lang), Icons.Filled.List),
+        Triple(NavRoutes.BUDGETS, com.pesaflow.app.ui.language.dashT("budgets_title", lang), Icons.Filled.Star),
+        Triple(NavRoutes.SAVINGS, com.pesaflow.app.ui.language.moreEntryTitle(NavRoutes.SAVINGS, lang), Icons.Filled.Savings),
+        Triple(NavRoutes.BILLS, com.pesaflow.app.ui.language.moreEntryTitle(NavRoutes.BILLS, lang), Icons.Filled.Home),
+        Triple(NavRoutes.MEALS, com.pesaflow.app.ui.language.moreEntryTitle(NavRoutes.MEALS, lang), Icons.Filled.Favorite),
+        Triple(NavRoutes.REPORTS, com.pesaflow.app.ui.language.moreEntryTitle(NavRoutes.REPORTS, lang), Icons.Filled.Info),
+        Triple(NavRoutes.NETWORTH, com.pesaflow.app.ui.language.moreEntryTitle(NavRoutes.NETWORTH, lang), Icons.Filled.AccountBox),
+        Triple(NavRoutes.BUDDY, com.pesaflow.app.ui.language.dashT("rail_buddy", lang), Icons.Filled.Face),
+        Triple(NavRoutes.REVIEW, com.pesaflow.app.ui.language.moreEntryTitle(NavRoutes.REVIEW, lang), Icons.Filled.CheckCircle)
     )
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text("Jump to", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+        Text(com.pesaflow.app.ui.language.dashT("jump_to", lang), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
         Spacer(modifier = Modifier.height(8.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(shortcuts) { (route, label, icon) ->
@@ -1456,7 +1471,7 @@ private fun ShortcutRail(onNavigate: (String) -> Unit) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.clickable(
                         role = Role.Button,
-                        onClickLabel = "Open $label",
+                        onClickLabel = com.pesaflow.app.ui.language.dashT("open_label", lang, label),
                         onClick = { onNavigate(route) }
                     )
                 ) {
