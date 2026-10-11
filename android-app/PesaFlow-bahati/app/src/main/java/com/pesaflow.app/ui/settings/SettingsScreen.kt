@@ -560,6 +560,46 @@ fun SettingsScreen(viewModel: FinanceViewModel) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Notifications", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
+                        // Outcome presets: one decision instead of four
+                        // switches. Each states exactly what it enables;
+                        // permission itself is never touched here.
+                        var notifPreset by remember { mutableStateOf(prefs.getString("notif_preset", "custom")) }
+                        fun applyPreset(name: String) {
+                            val daily = name == "balanced"
+                            val weekly = false
+                            val sunday = name == "balanced"
+                            val night = name == "balanced"
+                            notifTransactions = daily
+                            notifWeekly = weekly
+                            sundayReport = sunday
+                            nightReport = night
+                            prefs.edit().putString("notif_preset", name)
+                                .putBoolean("daily_summary", daily)
+                                .putBoolean("weekly_recap", weekly)
+                                .putBoolean("sunday_report", sunday)
+                                .putBoolean("night_report", night).apply()
+                            if (daily) ReminderScheduler.scheduleDaily(context) else ReminderScheduler.cancelDaily(context)
+                            if (weekly) ReminderScheduler.scheduleWeekly(context) else ReminderScheduler.cancelWeekly(context)
+                            if (sunday) ReminderScheduler.scheduleSundayReport(context) else ReminderScheduler.cancelSundayReport(context)
+                            if (night) ReminderScheduler.scheduleNightReport(context) else ReminderScheduler.cancelNightReport(context)
+                            notifPreset = name
+                        }
+                        @OptIn(ExperimentalLayoutApi::class)
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(selected = notifPreset == "essentials", onClick = { applyPreset("essentials") }, label = { Text("Essentials only") })
+                            FilterChip(selected = notifPreset == "balanced", onClick = { applyPreset("balanced") }, label = { Text("Balanced") })
+                            FilterChip(selected = notifPreset == "custom", onClick = { notifPreset = "custom"; prefs.edit().putString("notif_preset", "custom").apply() }, label = { Text("Custom") })
+                        }
+                        Text(
+                            when (notifPreset) {
+                                "essentials" -> "Essentials: no scheduled pings. Urgent bill + budget alerts still arrive; everything else stays silent."
+                                "balanced" -> "Balanced: daily summary, night report 9:30pm, Sunday 8pm report. Weekly recap stays off (Sunday covers it)."
+                                else -> "Custom: each reminder below decides for itself."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text("System permission", style = MaterialTheme.typography.bodySmall)
@@ -643,7 +683,8 @@ fun SettingsScreen(viewModel: FinanceViewModel) {
                             Text("Daily spending summary", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
                             Switch(checked = notifTransactions, onCheckedChange = {
                                 notifTransactions = it
-                                prefs.edit().putBoolean("daily_summary", it).apply()
+                                prefs.edit().putBoolean("daily_summary", it).putString("notif_preset", "custom").apply()
+                                notifPreset = "custom"
                                 if (it) {
                                     ReminderScheduler.scheduleDaily(context)
                                     NotificationHelper.show(context, 10, "Reminders on ✓", "You'll get a daily spending summary here.")
@@ -655,7 +696,8 @@ fun SettingsScreen(viewModel: FinanceViewModel) {
                             Text("Weekly summaries", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
                             Switch(checked = notifWeekly, onCheckedChange = {
                                 notifWeekly = it
-                                prefs.edit().putBoolean("weekly_recap", it).apply()
+                                prefs.edit().putBoolean("weekly_recap", it).putString("notif_preset", "custom").apply()
+                                notifPreset = "custom"
                                 if (it) {
                                     ReminderScheduler.scheduleWeekly(context)
                                     NotificationHelper.show(context, 11, "Weekly recap on ✓", "You'll get a 7-day spending recap every week.")
@@ -670,7 +712,8 @@ fun SettingsScreen(viewModel: FinanceViewModel) {
                             }
                             Switch(checked = sundayReport, onCheckedChange = {
                                 sundayReport = it
-                                prefs.edit().putBoolean("sunday_report", it).apply()
+                                prefs.edit().putBoolean("sunday_report", it).putString("notif_preset", "custom").apply()
+                                notifPreset = "custom"
                                 if (it) {
                                     ReminderScheduler.scheduleSundayReport(context)
                                     NotificationHelper.show(context, 12, "Sunday report on ✓", "See you Sunday 8pm. 🌙")
@@ -685,7 +728,8 @@ fun SettingsScreen(viewModel: FinanceViewModel) {
                             }
                             Switch(checked = nightReport, onCheckedChange = {
                                 nightReport = it
-                                prefs.edit().putBoolean("night_report", it).apply()
+                                prefs.edit().putBoolean("night_report", it).putString("notif_preset", "custom").apply()
+                                notifPreset = "custom"
                                 if (it) {
                                     ReminderScheduler.scheduleNightReport(context)
                                     NotificationHelper.show(context, 13, "Night report on ✓", "See you tonight 9:30pm. 🌙")

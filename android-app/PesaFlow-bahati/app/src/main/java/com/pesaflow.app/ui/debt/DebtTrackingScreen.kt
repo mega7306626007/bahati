@@ -364,7 +364,16 @@ fun DebtCard(
     var settleAmt by remember(debt.id) {
         mutableStateOf(if (debt.amount % 1.0 == 0.0) debt.amount.toInt().toString() else debt.amount.toString())
     }
-    var settleMethod by remember(debt.id) { mutableStateOf(PaymentMethod.MPESA) }
+    // Last-used method wins over the MPESA default: routine repayments
+    // then need zero decisions (amount is already the full balance).
+    var settleMethod by remember(debt.id) {
+        val last = debtShareCtx.getSharedPreferences("pesaflow_prefs", android.content.Context.MODE_PRIVATE)
+            .getString("last_method", "MPESA")
+        mutableStateOf(runCatching { PaymentMethod.valueOf(last ?: "MPESA") }.getOrDefault(PaymentMethod.MPESA))
+    }
+    // Partial section stays collapsed: full payment is one tap, partial
+    // is one more tap — discoverable, never in the way.
+    var showPartial by remember(debt.id) { mutableStateOf(false) }
     val settled = debt.status == "PAID"
     val late = !settled && debt.dueDate in 1..now
     SkinCard(skin = SkinDebt) {
@@ -452,10 +461,24 @@ fun DebtCard(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(PesaSpacing.sm)) {
                     Text(
-                        "Full balance is " + debt.amount.toKSh() + ". Enter less for a part-payment — the remainder stays open.",
+                        "Full balance is " + debt.amount.toKSh() + ". Pay it all, or open a part-payment below — the remainder stays open.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Button(
+                        onClick = {
+                            debtShareCtx.getSharedPreferences("pesaflow_prefs", android.content.Context.MODE_PRIVATE)
+                                .edit().putString("last_method", settleMethod.name).apply()
+                            showSettle = false
+                            if (onSettlePart != null) onSettlePart(debt.amount, settleMethod)
+                            else onSettleLog()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Pay in full " + debt.amount.toKSh()) }
+                    TextButton(onClick = { showPartial = !showPartial }) {
+                        Text(if (showPartial) "Hide part-payment" else "Make partial payment")
+                    }
+                    if (showPartial) {
                     OutlinedTextField(
                         value = settleAmt,
                         onValueChange = { v -> if (v.matches(Regex("^\\d*(\\.\\d{0,2})?\$"))) settleAmt = v },
@@ -472,18 +495,21 @@ fun DebtCard(
                     if (!settleValid) {
                         Text("Enter an amount above zero.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                     }
+                    }
                 }
             },
             confirmButton = {
                 Button(
-                    enabled = settleValid,
+                    enabled = !showPartial || settleValid,
                     onClick = {
+                        debtShareCtx.getSharedPreferences("pesaflow_prefs", android.content.Context.MODE_PRIVATE)
+                            .edit().putString("last_method", settleMethod.name).apply()
                         val amt = settleAmt.toDoubleOrNull() ?: return@Button
                         showSettle = false
                         if (onSettlePart != null) onSettlePart(amt, settleMethod)
                         else onSettleLog()
                     }
-                ) { Text("Log payment") }
+                ) { Text(if (showPartial) "Log part-payment" else "Close") }
             },
             dismissButton = { TextButton(onClick = { showSettle = false }) { Text("Cancel") } }
         )

@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -49,10 +50,26 @@ fun ExportScreen(
         }.timeInMillis
     }
 
+    // Purpose-first: one open section at a time. Backup and export
+    // never blend - restoring lives in Settings, stated below.
+    var openSection by remember { mutableStateOf<String?>(null) }
+    fun toggle(section: String) {
+        openSection = if (openSection == section) null else section
+    }
+
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         item {
             Text("📤 Export & Backup", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
+        item {
+            PurposeHeader(
+                title = "Analyse my transactions",
+                subtitle = "CSV or PDF of your ledger",
+                open = openSection == "analyse",
+                onToggle = { toggle("analyse") }
+            )
+        }
+        if (openSection == "analyse") {
         item {
             Card(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -168,7 +185,17 @@ fun ExportScreen(
                 }
             }
         }
+        }
         item { Spacer(modifier = Modifier.height(12.dp)) }
+        item {
+            PurposeHeader(
+                title = "Back up or restore my data",
+                subtitle = "Complete backup file - restore in Settings",
+                open = openSection == "backup",
+                onToggle = { toggle("backup") }
+            )
+        }
+        if (openSection == "backup") {
         item {
             Card(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -192,7 +219,17 @@ fun ExportScreen(
                 }
             }
         }
+        }
         item { Spacer(modifier = Modifier.height(12.dp)) }
+        item {
+            PurposeHeader(
+                title = "Share a financial summary",
+                subtitle = "Readable 30-day text for people",
+                open = openSection == "share",
+                onToggle = { toggle("share") }
+            )
+        }
+        if (openSection == "share") {
         item {
             Card(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -209,6 +246,35 @@ fun ExportScreen(
                 }
             }
         }
+        }
         item { Spacer(modifier = Modifier.height(80.dp)) }
+    }
+}
+
+// One purpose per row: title + what it produces + chevron. The flow
+// underneath is unchanged -- only the decision is smaller.
+@Composable
+private fun PurposeHeader(
+    title: String,
+    subtitle: String,
+    open: Boolean,
+    onToggle: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onToggle,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, fontWeight = FontWeight.Bold)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Text(if (open) "\u25B4" else "\u25BE", style = MaterialTheme.typography.titleMedium)
+        }
     }
 }
