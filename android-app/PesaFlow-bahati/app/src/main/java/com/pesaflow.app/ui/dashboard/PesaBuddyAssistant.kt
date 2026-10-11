@@ -881,6 +881,87 @@ fun processUserInput(
                 com.pesaflow.app.ui.buddy.BuddyStrings.adviceTip(cat, amt, tip, cardLang)
             }
 
+        // Wave 2: rent, airtime, debts, bills, savings, month, momentum.
+        q.contains("rent") || q.contains("hostel") || q.contains("nyumba") || q.contains("kodi") ->
+            run {
+                val rent = byCat["Rent"] ?: 0.0
+                val pct = if (monthIncome > 0) (rent / monthIncome * 100).toInt() else -1
+                val verdict = when (cardLang) {
+                    AppLanguage.KISWAHILI -> if (pct < 0) "Rekodi kodi mara mbili nami nitailinganisha." else if (pct > 30) "Hiyo ni $pct% ya kipato — juu ya sheria ya 30%, ishi kwa ukweli." else "Ndani ya sheria ya 30% — paa limelindwa vizuri."
+                    AppLanguage.SHENG -> if (pct < 0) "Log rent twice nami nitaibenchmark." else if (pct > 30) "Hiyo ni $pct% ya income — juu ya 30% rule, feel it honestly." else "Ndani ya 30% rule — roof secured wisely."
+                    AppLanguage.MIXED -> if (pct < 0) "Log rent twice." else if (pct > 30) "$pct% ya income — over 30% rule." else "Inside 30% rule."
+                    else -> if (pct < 0) "Log rent twice and I'll benchmark it." else if (pct > 30) "That's $pct% of income — above the 30% rule, feel the pinch honestly." else "Inside the 30% rule — roof secured wisely."
+                }
+                com.pesaflow.app.ui.buddy.BuddyStrings.rentAdvice(rent.toInt().toString(), verdict, cardLang)
+            }
+
+        q.contains("airtime") || q.contains("bundles") || q.contains("bandos") || q.contains("credit") ->
+            com.pesaflow.app.ui.buddy.BuddyStrings.airtimeAdvice(((byCat["Airtime"] ?: 0.0) + (byCat["Data"] ?: 0.0)).toInt().toString(), cardLang)
+
+        q.contains("deni") || q.contains("madeni") || com.pesaflow.app.ui.buddy.BuddyTextNorm.hasWord(q, "owe") || com.pesaflow.app.ui.buddy.BuddyTextNorm.hasWord(q, "owed") ->
+            run {
+                val oweMe = openDebts.filter { it.direction == "THEY_OWE" }.sumOf { it.amount }
+                val iOwe = openDebts.filter { it.direction == "I_OWE" }.sumOf { it.amount }
+                val biggest = openDebts.maxByOrNull { it.amount }
+                val detail = if (biggest != null) "Biggest open: ${biggest.person} KSh ${biggest.amount.toInt()}."
+                else when (cardLang) {
+                    AppLanguage.KISWAHILI -> "Hakuna wazi — slate safi. 🎉"
+                    AppLanguage.SHENG -> "Hakuna open — clean slate. 🎉"
+                    else -> "No open rows — clean slate. 🎉"
+                }
+                com.pesaflow.app.ui.buddy.BuddyStrings.debtSummary(oweMe.toInt().toString(), iOwe.toInt().toString(), detail, cardLang)
+            }
+
+        q.contains("bills zangu") || q.contains("bili zangu") || q.contains("mabill") || (q.contains("bills") && (q.contains("summary") || q.contains("open") || q.contains("wazi"))) ->
+            run {
+                val dueSoon = openBills.count { it.dueDate <= System.currentTimeMillis() + 7 * 24L * 60 * 60 * 1000 }
+                com.pesaflow.app.ui.buddy.BuddyStrings.billsSummary(openBills.size.toString(), openBillTotal.toInt().toString(), dueSoon.toString(), cardLang)
+            }
+
+        q.contains("savings zangu") || q.contains("savings yangu") || q.contains("akiba yangu") || q.contains("akiba zangu") ->
+            run {
+                val lines = if (goals.isEmpty()) {
+                    when (cardLang) {
+                        AppLanguage.KISWAHILI -> "Hakuna malengo — weka moja chini ya Goals. 🎯"
+                        AppLanguage.SHENG -> "Hakuna goals — weka moja kwa Goals. 🎯"
+                        else -> "No goals yet — set one under Goals. 🎯"
+                    }
+                } else {
+                    goals.joinToString("\n") { "• ${it.title}: KSh ${it.currentAmount.toInt()} / ${it.targetAmount.toInt()}" }
+                }
+                com.pesaflow.app.ui.buddy.BuddyStrings.savingsSummary(lines, cardLang)
+            }
+
+        q.contains("month summary") || q.contains("summary ya mwezi") || q.contains("how was my month") || q.contains("mwezi umekuwaje") ->
+            run {
+                val top = topCat?.let { "${it.key} KSh ${it.value.toInt()}" } ?: when (cardLang) {
+                    AppLanguage.KISWAHILI -> "hakuna bado"
+                    AppLanguage.SHENG -> "hakuna bado"
+                    else -> "nothing yet"
+                }
+                com.pesaflow.app.ui.buddy.BuddyStrings.monthSummary(monthIncome.toInt().toString(), monthExpense.toInt().toString(), top, cardLang)
+            }
+
+        q.contains("improving") || q.contains("ninaimprove") || q.contains("better than last") ->
+            run {
+                val prev = com.pesaflow.app.data.time.previousWeekRange(nowMs)
+                val lastWeek = txs.filter { it.type == TransactionType.EXPENSE && !it.isSample && it.dateTimestamp in prev && com.pesaflow.app.data.time.inPastOrNow(it.dateTimestamp, nowMs) }.sumOf { it.amount }
+                com.pesaflow.app.ui.buddy.BuddyStrings.improvingVerdict(weekSpend.toInt().toString(), lastWeek.toInt().toString(), weekSpend <= lastWeek, cardLang)
+            }
+
+        q.contains("something interesting") || q.contains("fun fact") || q.contains("nishangaze") || q.contains("surprise me") || q.contains("nibambe") ->
+            run {
+                val topMerchant = monthExpenses.filter { it.merchant.isNotBlank() }.groupBy { it.merchant }.maxByOrNull { e -> e.value.sumOf { it.amount } }
+                if (topMerchant == null) com.pesaflow.app.ui.buddy.BuddyStrings.topEmpty(cardLang)
+                else com.pesaflow.app.ui.buddy.BuddyStrings.funFact(topMerchant.key.take(24), topMerchant.value.size.toString(), topMerchant.value.sumOf { it.amount }.toInt().toString(), cardLang)
+            }
+
+        (q.contains("month") || q.contains("mwezi")) && askedCat != null ->
+            com.pesaflow.app.ui.buddy.BuddyStrings.catMonth(askedCat, (byCat[askedCat] ?: 0.0).toInt().toString(), cardLang)
+
+        q.contains("chama") ->
+            com.pesaflow.app.ui.buddy.BuddyStrings.chamaAdvice((byCat["Savings"] ?: 0.0).toInt().toString(), cardLang)
+
         q.contains("today") || q.contains("leo") ->
             if (txs.isEmpty()) com.pesaflow.app.ui.buddy.BuddyStrings.todayEmpty(cardLang)
             else com.pesaflow.app.ui.buddy.BuddyStrings.todaySpend(todaySpend.toInt().toString(), monthExpense.toInt().toString(), cardLang)

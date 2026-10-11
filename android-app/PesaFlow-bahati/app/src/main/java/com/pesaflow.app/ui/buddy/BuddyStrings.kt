@@ -541,6 +541,81 @@ object BuddyStrings {
         "Advice yangu moja 💡: $envelope ndiyo leakiest envelope at KSh $amount hii mwezi. $tip"
     )
 
+    // ---------- wave 2: rent, airtime, debts, bills, savings, month ----------
+
+    fun rentAdvice(rent: String, verdict: String, lang: AppLanguage): String = pick(
+        lang,
+        "Rent check 🏠: KSh $rent this month. $verdict Hostel hack: a roommate halves more than rent — it halves bills, food waste and boredom too. 😄",
+        "Kuangalia kodi 🏠: KSh $rent mwezi huu. $verdict Mbinu ya hosteli: roommate hunusu zaidi ya kodi — hunusu bili, upotevu wa chakula na kuchoka pia. 😄",
+        "Rent check 🏠: KSh $rent hii mwezi. $verdict Hostel hack: roommate huhalf more than rent — huhalf bills, food waste na boredom pia. 😄"
+    )
+
+    fun airtimeAdvice(total: String, lang: AppLanguage): String = pick(
+        lang,
+        "Airtime report 📱: KSh $total this month. Night bundles + Wi-Fi-first downloads plug the leak — daytime streaming is where bundles go to die. 😄",
+        "Ripoti ya bando 📱: KSh $total mwezi huu. Bando za usiku + kupakua kwa Wi-Fi huziba uvujaji — kutazama mchana ndiko bando hufia. 😄",
+        "Airtime report 📱: KSh $total hii mwezi. Night bundles + Wi-Fi-first downloads huplug leak — daytime streaming ndiko bundles huenda kudie. 😄"
+    )
+
+    fun debtSummary(oweMe: String, iOwe: String, detail: String, lang: AppLanguage): String = pick(
+        lang,
+        "Deni ledger ⚖️: they owe you KSh $oweMe · you owe KSh $iOwe. $detail Settle the oldest small one first — momentum beats math. 💪",
+        "Leja ya madeni ⚖️: wanakudai KSh $oweMe · unadaiwa KSh $iOwe. $detail Lipa dogo la zamani kwanza — mwendo hushinda hesabu. 💪",
+        "Deni ledger ⚖️: wanakudai KSh $oweMe · unadaiwa KSh $iOwe. $detail Clear dogo la kitambo kwanza — momentum hushinda math. 💪"
+    )
+
+    fun billsSummary(count: String, total: String, dueSoon: String, lang: AppLanguage): String = pick(
+        lang,
+        "Bills board 🧾: $count open totaling KSh $total, $dueSoon due within 7 days. Pay the smallest urgent one today — future you is already grateful. 🙂",
+        "Ubao wa bili 🧾: $count wazi jumla KSh $total, $dueSoon zinadaiwa ndani ya siku 7. Lipa ndogo ya haraka leo — wewe wa baadaye ameshakushukuru. 🙂",
+        "Bills board 🧾: $count open totaling KSh $total, $dueSoon zinadaiwa within 7 days. Lipa ndogo urgent leo — future you ishashukuru. 🙂"
+    )
+
+    fun savingsSummary(lines: String, lang: AppLanguage): String = pick(
+        lang,
+        "Akiba report 🎯:\n$lines Skim 10% off every income before spending — the goals fund themselves. 💧",
+        "Ripoti ya akiba 🎯:\n$lines Toa 10% ya kila kipato kabla ya kutumia — malengo hujifadhili yenyewe. 💧",
+        "Savings report 🎯:\n$lines Toa 10% ya kila income before kuspend — goals hujifund themselves. 💧"
+    )
+
+    fun monthSummary(income: String, expenses: String, top: String, lang: AppLanguage): String = pick(
+        lang,
+        "Month so far 📊: KSh $income in, KSh $expenses out. Biggest envelope: $top. Anything left on the 1st is a win — protect it early. 🛡️",
+        "Mwezi hadi sasa 📊: KSh $income ndani, KSh $expenses nje. Bahasha kubwa: $top. Kilichobaki tarehe 1 ni ushindi — kilinde mapema. 🛡️",
+        "Mwezi hadi sai 📊: KSh $income in, KSh $expenses out. Biggest envelope: $top. Kitu kitakachobaki tarehe 1 ni win — iprotect early. 🛡️"
+    )
+
+    fun improvingVerdict(thisWeek: String, lastWeek: String, better: Boolean, lang: AppLanguage): String = pick(
+        lang,
+        if (better) "Trending better 📉: KSh $thisWeek this week vs KSh $lastWeek last week. Whatever you changed — keep doing it. 🎉"
+        else "Heating up 📈: KSh $thisWeek this week vs KSh $lastWeek last week. One cheap Cook day flips the story. 🍲",
+        if (better) "Unaimarika 📉: KSh $thisWeek wiki hii dhidi ya KSh $lastWeek wiki iliyopita. Chochote ulichobadilisha — endelea nacho. 🎉"
+        else "Inapanda 📈: KSh $thisWeek wiki hii dhidi ya KSh $lastWeek wiki iliyopita. Siku moja rahisi ya kupika hubadilisha hadithi. 🍲",
+        if (better) "Unaimprove 📉: KSh $thisWeek hii wiki vs KSh $lastWeek last week. Chochote ulichange — keep doing it. 🎉"
+        else "Inaheat up 📈: KSh $thisWeek hii wiki vs KSh $lastWeek last week. Siku moja cheap ya Cook hubadilisha story. 🍲"
+    )
+
+    fun funFact(merchant: String, count: String, total: String, lang: AppLanguage): String = pick(
+        lang,
+        "Ledger gossip 🤭: $merchant took KSh $total from you across $count visits this month. Loyalty this deep deserves a discount — ask them. 😄",
+        "Umbea wa leja 🤭: $merchant amechukua KSh $total kwako katika ziara $count mwezi huu. Uaminifu huu unastahili punguzo — waulize. 😄",
+        "Ledger gossip 🤭: $merchant imekula KSh $total kwako across visits $count hii mwezi. Loyalty hii deep inastahili discount — waulize. 😄"
+    )
+
+    fun catMonth(cat: String, total: String, lang: AppLanguage): String = pick(
+        lang,
+        "$cat this month: KSh $total. Say 'why is flexible money this amount?' and I'll show where it all went. 🔍",
+        "$cat mwezi huu: KSh $total. Sema 'why is flexible money this amount?' nami nitaonyesha zote zilienda wapi. 🔍",
+        "$cat hii mwezi: KSh $total. Sema 'why is flexible money this amount?' nami nitaonyesha zote zilienda wapi. 🔍"
+    )
+
+    fun chamaAdvice(total: String, lang: AppLanguage): String = pick(
+        lang,
+        "Chama watch 🤝: KSh $total to savings groups this month. Chamas beat willpower — but confirm the payout order before adding a second one. 📋",
+        "Kuangalia chama 🤝: KSh $total kwa vikundi vya akiba mwezi huu. Chama hushinda nia — lakini thibitisha mpangilio wa malipo kabla ya kuongeza cha pili. 📋",
+        "Chama watch 🤝: KSh $total kwa savings groups hii mwezi. Chama hushinda willpower — but confirm payout order before kuadd ya pili. 📋"
+    )
+
     fun sorryReply(lang: AppLanguage): String = pick(
         lang,
         "No worries at all — ledgers forgive, budgets remember. 😄 What next?",
