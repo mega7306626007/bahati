@@ -57,7 +57,17 @@ class SearchEngine {
         val filtered = if (typeFilter != null) allTxs.filter { it.type == typeFilter } else allTxs
         val hits = mutableListOf<SearchHit>()
         for (tx in filtered) {
-            val fields = listOf(
+            // Ziidi quarantine: a Ziidi-product row (subcategory stamped
+            // "Ziidi transfer") scores on its merchant ONLY, unless the
+            // query itself mentions ziidi. Its subcategory ("Ziidi
+            // transfer"), tags, notes and SMS description must never drag
+            // it into somebody else's name search. Person-named-Ziidi rows
+            // carry no such subcategory, so they keep full scoring.
+            val ziidiProduct = tx.subcategory.equals("Ziidi transfer", ignoreCase = true) &&
+                terms.none { it.contains("ziidi") }
+            val fields = if (ziidiProduct) {
+                listOf("merchant" to tx.merchant)
+            } else listOf(
                 "merchant" to tx.merchant,
                 "category" to tx.category,
                 "notes" to tx.notes,

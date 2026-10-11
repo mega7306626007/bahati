@@ -139,6 +139,48 @@ class SearchEngineTest {
         assertEquals(listOf("Nayivas Supermarket"), result.hits.map { it.transaction.merchant })
     }
 
+    private fun ziidiTx(merchant: String, notes: String = "", description: String = ""): Transaction {
+        return Transaction(
+            amount = 5000.0, type = TransactionType.EXPENSE, category = "Savings",
+            merchant = merchant, notes = notes, description = description,
+            subcategory = "Ziidi transfer", dateTimestamp = System.currentTimeMillis()
+        )
+    }
+
+    @Test
+    fun `ziidi product rows never leak into person-name queries`() {
+        val engine = SearchEngine()
+        val rows = listOf(
+            tx("Trevor", "Food", 350.0),
+            ziidiTx("M-Pesa Ziidi", description = "Confirmed invested in M-Pesa Ziidi MMF"),
+            ziidiTx("Transfer to Ziidi", notes = "monthly top up")
+        )
+        val result = engine.searchWithFuzzy(rows, "Trevor", maxResults = 500)
+        assertEquals(listOf("Trevor"), result.hits.map { it.transaction.merchant })
+    }
+
+    @Test
+    fun `ziidi query still finds ziidi rows`() {
+        val engine = SearchEngine()
+        val rows = listOf(
+            tx("Trevor", "Food", 350.0),
+            ziidiTx("M-Pesa Ziidi")
+        )
+        val result = engine.search(rows, "ziidi")
+        assertTrue(result.hits.any { it.transaction.merchant == "M-Pesa Ziidi" })
+    }
+
+    @Test
+    fun `person named ziidi still matches by name`() {
+        val engine = SearchEngine()
+        val rows = listOf(
+            tx("ZIIDI MWANGI", "Transfer", 200.0),
+            ziidiTx("M-Pesa Ziidi")
+        )
+        val result = engine.search(rows, "mwangi")
+        assertEquals(listOf("ZIIDI MWANGI"), result.hits.map { it.transaction.merchant })
+    }
+
     @Test
     fun `exact hits suppress fuzzy near misses`() {
         // Regression: searching "trevor" must not drag in near-miss
