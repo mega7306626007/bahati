@@ -520,6 +520,7 @@ private fun PesaFlowAppNav(viewModel: FinanceViewModel) {
                         val contactRescanActive by viewModel.contactRescanActive.collectAsState()
                         ContactBookScreen(
                             contacts = contacts,
+                            transactions = transactions,
                             seedMerchant = contactSeed,
                             onSeedConsumed = { contactSeed = "" },
                             reprocessStatus = contactRuleScanStatus,

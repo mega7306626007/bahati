@@ -38,8 +38,10 @@ object ContactBook {
 
     fun relationships(): List<String> = RELATIONSHIPS
 
+    // Keys collapse inner whitespace too: "Super  Metro" and
+    // "SUPER METRO" resolve to one card, matching normalizeContact.
     private fun keyOf(name: String) =
-        name.trim().lowercase().replace("|", "").replace("=", "").replace(";", "")
+        name.trim().replace(Regex("\\s+"), " ").lowercase().replace("|", "").replace("=", "").replace(";", "")
 
     // Entries persist as |-separated lines: a literal pipe inside any field
     // would shift every column after it on the next read, and the numeric

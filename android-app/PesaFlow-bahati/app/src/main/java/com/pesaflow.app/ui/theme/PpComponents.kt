@@ -37,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -290,6 +291,23 @@ fun PpProgress(
     }
     // Barber-pole stripes: dark slashes over the fill, clipped to the
     // rounded bar — a filling bar reads as working at a glance.
+    // Barber-pole stripes drift BACKWARDS while a bar is filling: motion
+    // against the fill direction catches the eye and pulls it forward.
+    // Full and empty bars sit still - nothing left to entice.
+    val drift = remember { androidx.compose.animation.core.Animatable(0f) }
+    androidx.compose.runtime.LaunchedEffect(striped, fraction) {
+        if (striped && fraction > 0f && fraction < 1f) {
+            while (true) {
+                drift.animateTo(
+                    -1f,
+                    animationSpec = androidx.compose.animation.core.tween(1100, easing = androidx.compose.animation.core.LinearEasing)
+                )
+                drift.snapTo(0f)
+            }
+        } else {
+            drift.snapTo(0f)
+        }
+    }
     Canvas(
         modifier
             .fillMaxWidth()
@@ -300,6 +318,7 @@ fun PpProgress(
         val w = size.width * animated
         if (w <= 0f) return@Canvas
         val stripe = 7.dp.toPx()
+        val phase = drift.value * stripe * 2f
         clipPath(
             Path().apply {
                 addRoundRect(RoundRect(Rect(Offset.Zero, size), CornerRadius(size.height / 2)))
@@ -308,7 +327,7 @@ fun PpProgress(
             drawRect(color = color, topLeft = Offset.Zero, size = Size(w, size.height))
             if (striped) {
                 val dark = Color.Black.copy(alpha = 0.22f)
-                var x = -size.height
+                var x = -size.height + phase
                 while (x < w + size.height) {
                     drawLine(
                         color = dark,

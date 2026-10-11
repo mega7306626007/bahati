@@ -332,7 +332,7 @@ object BuddyBrain {
     val BUDDY_CATEGORIES = listOf(
         "Food", "Transport", "Rent", "Airtime", "Data", "Bills", "School",
         "Shopping", "Health", "Upkeep", "Savings", "Debt", "Salary", "Income",
-        "Clothes", "Printing", "Water", "Electricity", "Kujibamba",
+        "Clothes", "Luxury", "Printing", "Water", "Electricity", "Kujibamba",
         "Transfers", "Other"
     )
 

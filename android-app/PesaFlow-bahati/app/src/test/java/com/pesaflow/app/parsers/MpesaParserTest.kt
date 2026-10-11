@@ -677,6 +677,13 @@ class MpesaParserTest {
     }
 
     @Test
+    fun `luxury goods file as Luxury, ordinary wear stays Clothes`() {
+        assertEquals("Luxury", MpesaParser.inferCategory("LUXURY PERFUME SHOP", TransactionType.EXPENSE, ""))
+        assertEquals("Luxury", MpesaParser.inferCategory("Designer Boutique", TransactionType.EXPENSE, ""))
+        assertEquals("Clothes", MpesaParser.inferCategory("SHOE CENTRE", TransactionType.EXPENSE, ""))
+    }
+
+    @Test
     fun `loan offers without movement never parse`() {
         assertNull(MpesaParser.parseMessage("You are eligible for a Tala loan of up to KES 30,000. Apply now!"))
         assertNull(MpesaParser.parseMessage("Your loan repayment of KSh 750 is due tomorrow. Pay via M-PESA."))

@@ -1762,6 +1762,7 @@ object MpesaParser {
             lower.contains("school") || lower.contains("fees") || lower.contains(" fee ") || lower.contains("university") || lower.contains("tuition") || lower.contains("exam") || lower.contains("strathmore") -> "School"
             lower.contains("reversal") || lower.contains("revers") -> "Other"
             lower.contains("salon") || lower.contains("barber") || lower.contains("hair") || lower.contains("nails") -> "Kujibamba"
+            lower.contains("luxury") || lower.contains("designer") || lower.contains("perfume") || lower.contains("cologne") || lower.contains("jewelry") || lower.contains("jewellery") || lower.contains("boutique") -> "Luxury"
             lower.contains("shirt") || lower.contains("trouser") || lower.contains("shoe") || lower.contains("clothe") || lower.contains("dress") || lower.contains("jacket") || lower.contains("jeans") || lower.contains("wear") -> "Clothes"
             lower.contains("hospital") || lower.contains("clinic") || lower.contains("pharmacy") || lower.contains("medicine") || lower.contains("medical") || lower.contains("drug") || lower.contains("goodlife") || lower.contains("haltons") || lower.contains("mydawa") || lower.contains("khan") || lower.contains("shah") || Regex("\\bsha\\b").containsMatchIn(lower) -> "Health"
             lower.contains("wifi") || lower.contains("internet") || lower.contains("modem") || lower.contains("zuku") -> "Data"

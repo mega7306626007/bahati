@@ -26,7 +26,7 @@ data class CampusTransport(
 val CAMPUS_TRANSPORT: List<CampusTransport> = listOf(
     CampusTransport(
         campus = "UoN",
-        keys = listOf("nairobi", "uon", "chiromo"),
+        keys = listOf("nairobi", "uon", "chiromo", "kabete", "lower kabete", "upper kabete"),
         rentalAreas = listOf("Ngara", "Pangani", "Parklands", "Nairobi West", "Madaraka", "South B", "South C", "Kilimani"),
         fareOneWayMin = 50,
         fareOneWayMax = 90,

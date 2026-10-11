@@ -119,7 +119,7 @@ private val GUIDE: List<CampusSpot> = listOf(
 private val UNI_KEYS: List<Pair<String, Set<String>>> = listOf(
     "KU" to setOf("kenyatta", "ku", "kahawa"),
     "JKUAT" to setOf("jkuat", "jomo kenyatta", "juja"),
-    "UoN" to setOf("uon", "university of nairobi", "nairobi"),
+    "UoN" to setOf("uon", "university of nairobi", "nairobi", "kabete", "chiromo", "lower kabete", "upper kabete"),
     "Maseno" to setOf("maseno"),
     "Egerton" to setOf("egerton", "njoro"),
     "Moi" to setOf("moi university", "moi", "eldoret", "kesses"),

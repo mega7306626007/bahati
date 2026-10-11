@@ -29,6 +29,7 @@ const val TEST_CONTACT_DUMP_ENABLED = true
 @Composable
 fun ContactBookScreen(
     contacts: List<ContactEntry>,
+    transactions: List<com.pesaflow.app.data.models.Transaction> = emptyList(),
     seedMerchant: String = "",
     onSeedConsumed: () -> Unit = {},
     reprocessStatus: String? = null,
@@ -185,6 +186,7 @@ fun ContactBookScreen(
                 items(filtered, key = { it.id.ifBlank { "contact-${it.name}" } }) { c ->
                     ContactRow(
                         entry = c,
+                        transactions = transactions,
                         onEdit = { editing = c },
                         onDelete = { onDelete(c.name) }
                     )
@@ -220,14 +222,24 @@ fun ContactBookScreen(
 @Composable
 private fun ContactRow(
     entry: ContactEntry,
+    transactions: List<com.pesaflow.app.data.models.Transaction> = emptyList(),
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    var expanded by remember { mutableStateOf(false) }
+    val myTxns = remember(entry, transactions) {
+        transactions.filter { com.pesaflow.app.data.ledger.ContactBook.matchesContact(it.merchant, entry) }
+            .sortedByDescending { it.dateTimestamp }
+    }
+    val members = remember(entry) {
+        com.pesaflow.app.data.ledger.splitUserList(entry.matchTerms)
+    }
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        onClick = { expanded = !expanded }
     ) {
+        Column(modifier = Modifier.padding(12.dp)) {
         Row(
-            modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.Filled.Person, contentDescription = null, modifier = Modifier.size(32.dp))
@@ -248,11 +260,85 @@ private fun ContactRow(
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-            IconButton(onClick = onEdit) {
-                Icon(Icons.Filled.Edit, contentDescription = "Edit")
+            Column {
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Filled.Edit, contentDescription = "Edit")
+                }
+                Text(if (expanded) "-" else "+", style = MaterialTheme.typography.bodySmall)
             }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Filled.Delete, contentDescription = "Delete")
+            }
+        }
+        if (expanded) {
+            Spacer(modifier = Modifier.height(8.dp))
+            if (members.isNotEmpty()) {
+                Text(
+                    "Group members (" + members.size + ") - each opens its own messages:",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold
+                )
+                members.forEach { term ->
+                    MemberRow(term = term, transactions = transactions)
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+            if (myTxns.isEmpty()) {
+                Text(
+                    "No messages recorded under this name yet.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                Text(
+                    "Messages (" + myTxns.size + "):",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold
+                )
+                myTxns.take(20).forEach { tx ->
+                    Text(
+                        tx.merchant + " - KSh " + tx.amount.toInt() + " (" +
+                            java.text.SimpleDateFormat("d MMM", java.util.Locale.getDefault()).format(java.util.Date(tx.dateTimestamp)) + ")",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
+                if (myTxns.size > 20) {
+                    Text(
+                        "+" + (myTxns.size - 20) + " more in Transactions.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        }
+    }
+}
+
+@Composable
+private fun MemberRow(term: String, transactions: List<com.pesaflow.app.data.models.Transaction>) {
+    var open by remember { mutableStateOf(false) }
+    val termTxns = remember(term, transactions) {
+        transactions.filter { com.pesaflow.app.data.ledger.ContactBook.matchesContact(it.merchant, term) }
+            .sortedByDescending { it.dateTimestamp }
+    }
+    Column(modifier = Modifier.fillMaxWidth().padding(start = 8.dp, top = 2.dp)) {
+        TextButton(onClick = { open = !open }) {
+            Text((if (open) "- " else "+ ") + term + " (" + termTxns.size + ")", style = MaterialTheme.typography.bodySmall)
+        }
+        if (open) {
+            if (termTxns.isEmpty()) {
+                Text("No messages yet.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            termTxns.take(10).forEach { tx ->
+                Text(
+                    tx.merchant + " - KSh " + tx.amount.toInt(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
             }
         }
     }

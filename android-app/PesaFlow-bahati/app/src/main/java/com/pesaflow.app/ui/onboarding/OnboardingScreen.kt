@@ -109,7 +109,9 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
         Box(Modifier.fillMaxSize()) {
             GrandOpening(
                 onBegin = { welcomed = true },
-                onSkip = { showDemoConfirmation = true }
+                onSkip = { showDemoConfirmation = true },
+                onLanguage = { viewModel.setLanguage(it) },
+                initialLang = viewModel.currentLanguage.value
             )
             if (showDemoConfirmation) {
                 DemoDataConfirmationDialog(
@@ -203,6 +205,13 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
     var contactScope by rememberSaveable { mutableStateOf("BOTH") }
     var onboardingContacts by remember { mutableStateOf(ContactBook.readAll(bootPrefs)) }
     val scanScope = rememberCoroutineScope()
+    // Hold-on screen state: Finish runs ~15 write phases. Each phase
+    // reports progress and yields, so the UI paints instead of hanging.
+    // Total scales with real work, never a fake timer.
+    var finishing by remember { mutableStateOf(false) }
+    var finishProgress by remember { mutableStateOf(0f) }
+    var finishStage by remember { mutableStateOf("") }
+    var finishJoke by remember { mutableStateOf(0) }
     var scanResult by remember { mutableStateOf<SmsScanResult?>(null) }
     // One card per unknown sender — name once, all their rows file themselves.
     var senderCards by remember { mutableStateOf<List<SenderCard>>(emptyList()) }
@@ -952,7 +961,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
-                        Text("→ local food advice uses this spot.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Name the exact places you buy food (kibanda name, mess hall, market stall) - each one becomes a contact card, so every future row from them files itself as Food. One naming, forever sorted.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     if ("stages" in visible) {
                         Text("Common stages/routes? 🚏", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
@@ -1241,6 +1250,19 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                         enabled = !scanning,
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                     ) { Text(if (scanning) "Scanning... $scanProgress found" else if (!smsScanned) customScanLabel() else "Rescan", color = MaterialTheme.colorScheme.onSecondary) }
+                    // Live scan progress: indeterminate striped-feel bar +
+                    // running count so a long inbox never looks stuck.
+                    // (Total is unknown until the cursor ends - a fake
+                    // percent would be dishonest, so motion + count.)
+                    if (scanning) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        Text(
+                            "$scanProgress texts found so far - keep this screen open.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     // Custom calendar range: start day first, end day second
                     // (defaults to today). Picking a chip clears it again.
                     if (showStartPick) {
@@ -1291,10 +1313,24 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("No SMS to scan? 📄", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     Text(
-                        "Upload your M-Pesa statement (CSV or PDF). Password-protected files ask for the password first — every row then queues for review exactly like a scanned text.",
+                        "Upload your M-Pesa statement (CSV or PDF). Password-protected files ask for the password first - every row then queues for review exactly like a scanned text.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    var showStmtHelp by remember { mutableStateOf(false) }
+                    TextButton(onClick = { showStmtHelp = !showStmtHelp }) {
+                        Text(if (showStmtHelp) "Hide steps" else "How do I get my statement?")
+                    }
+                    if (showStmtHelp) {
+                        Text(
+                            "1. Open the M-Pesa app \u2192 Statements.\n"
+                                + "2. Pick a period (last 3 months is plenty).\n"
+                                + "3. Send it to your own email, then download the CSV or PDF here.\n"
+                                + "4. PDF password is usually the ID or document number you entered when requesting it.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     OutlinedButton(
                         onClick = { statementPicker.launch("*/*") },
                         enabled = !statementBusy && !scanning,
@@ -1697,7 +1733,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
             }
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = { if (step > 0) step-- }, enabled = step > 0) { Text("Back") }
+                TextButton(onClick = { if (!finishing && step > 0) step-- }, enabled = step > 0 && !finishing) { Text("Back") }
                 Button(
                     onClick = {
                         if (step == 5 && semesterStartMillis > 0L && endMillis > 0L && endMillis <= semesterStartMillis) {
@@ -1709,7 +1745,12 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             android.widget.Toast.makeText(appContext, "Tell us your name and university to continue — the rest is optional.", android.widget.Toast.LENGTH_LONG).show()
                         } else if (step < 5) {
                             step++
-                        } else {
+                        } else if (!finishing) {
+                            finishing = true
+                            finishProgress = 0.05f
+                            finishStage = "Starting"
+                            scanScope.launch {
+                            try {
                             val now = System.currentTimeMillis()
                             viewModel.setUserName(name)
                             viewModel.setNickname(nickname)
@@ -1729,6 +1770,9 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                     feesDueDate = feesDueMillis
                                 )
                             )
+                            finishProgress = 0.2f
+                            finishStage = "Saving your profile"
+                            kotlinx.coroutines.yield()
                             // Smart seeding: HELB tranches + sponsor answers become Income
                             // sources, so More → Income, budgets and Buddy know payday
                             // without re-asking on opening. Never duplicates: kinds
@@ -1770,6 +1814,9 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             if (seededIncome.isNotEmpty()) {
                                 viewModel.setIncomeSources(viewModel.incomeSources.value + seededIncome)
                             }
+                            finishProgress = 0.35f
+                            finishStage = "Seeding income sources"
+                            kotlinx.coroutines.yield()
                             // Declared profile (Phase 7): first-class facts from this
                             // run. Observation may only suggest changes later.
                             viewModel.saveFinancialProfile(
@@ -1822,6 +1869,9 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             saveTarget.toDoubleOrNull()?.takeIf { it > 0 }?.let {
                                 viewModel.addSavingsGoal("Monthly savings", it, 30)
                             }
+                            finishProgress = 0.55f
+                            finishStage = "Setting monthly budgets"
+                            kotlinx.coroutines.yield()
                             // Context facts (Layer C): explicit, provenance-stamped,
                             // user-editable. Inference may read but never overwrite them.
                             viewModel.setContextFact(com.pesaflow.app.data.context.ContextFact(key = "housing.current", value = homeKind, source = com.pesaflow.app.data.context.ContextSources.USER_SELECTED))
@@ -1909,6 +1959,9 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                 .putBoolean("daily_summary", true)
                                 .putBoolean("lunch_scan", true)
                                 .apply()
+                            finishProgress = 0.7f
+                            finishStage = "Arming reminders and bills"
+                            kotlinx.coroutines.yield()
                             ReminderScheduler.scheduleNightReport(appContext)
                             ReminderScheduler.scheduleSundayReport(appContext)
                             ReminderScheduler.scheduleDailyDigest(appContext)
@@ -1950,6 +2003,9 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             // the timetable — commute days + peak verdict follow.
                             // Only money held now seeds opening equity. Expected
                             // upkeep remains an income source until it actually lands.
+                            finishProgress = 0.85f
+                            finishStage = "Counting opening money"
+                            kotlinx.coroutines.yield()
                             viewModel.seedOpeningMoney(
                                 pocket.toDoubleOrNull() ?: 0.0,
                                 mpesaNow.toDoubleOrNull() ?: 0.0,
@@ -1986,14 +2042,70 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                     ).name) +
                                     (scanResult?.let { s -> "|scan_food=" + s.monthlyFor("Food").toInt() } ?: "")
                             )
+                            finishProgress = 1f
+                            finishStage = "Done"
+                            kotlinx.coroutines.yield()
                             celebrate = true
+                        } catch (e: Exception) {
+                            android.widget.Toast.makeText(appContext, "Setup hit a snag - nothing was lost. Tap Start again.", android.widget.Toast.LENGTH_LONG).show()
+                        } finally {
+                            finishing = false
+                        }
+                        }
                         }
                     },
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
-                ) { Text(if (step < 5) "Next" else "Start Tracking 💰", fontWeight = FontWeight.Bold) }
+                ) { Text(if (finishing) "Setting up..." else if (step < 5) "Next" else "Start Tracking 💰", fontWeight = FontWeight.Bold) }
             }
             Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+
+    // Hold-on screen: progress that scales with real phases, a striped
+    // bar, and rotating app jokes behind it. Back is locked, failure
+    // toasts and releases - the user never stares at a dead screen
+    // while the ledger saves underneath.
+    if (finishing) {
+        val finishJokes = remember {
+            listOf(
+                "Teaching matatus to file themselves...",
+                "Convincing HELB to arrive on time...",
+                "Counting chapati twice for accuracy...",
+                "Hiding bundles from yourself...",
+                "Negotiating with your landlord...",
+                "Polishing the safe-to-spend number..."
+            )
+        }
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            while (true) {
+                kotlinx.coroutines.delay(1600)
+                finishJoke = (finishJoke + 1) % finishJokes.size
+            }
+        }
+        Box(
+            Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text("Hold on - setting up your money", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    com.pesaflow.app.ui.theme.PpProgress(fraction = finishProgress)
+                    Text(finishStage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        finishJokes[finishJoke % finishJokes.size],
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         }
     }
 
@@ -2059,7 +2171,14 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
 // you, what happens next (4 quick steps), and the honest permissions note.
 // House voice is Mixed — the user hasn't picked a language yet.
 @Composable
-private fun GrandOpening(onBegin: () -> Unit, onSkip: () -> Unit) {
+@OptIn(ExperimentalLayoutApi::class)
+private fun GrandOpening(
+    onBegin: () -> Unit,
+    onSkip: () -> Unit,
+    onLanguage: (AppLanguage) -> Unit = {},
+    initialLang: AppLanguage = AppLanguage.MIXED
+) {
+    var picked by remember { mutableStateOf(initialLang) }
     val lang = AppLanguage.MIXED
     fun t(en: String, sw: String, sh: String, mix: String) =
         Copy4(en, sw, sh, mix).pick(lang)
@@ -2125,6 +2244,23 @@ private fun GrandOpening(onBegin: () -> Unit, onSkip: () -> Unit) {
                 )
                 OpeningRow("🎯", t("Budgets that update", "Bajeti zinazo-update", "Budget live", "Budgets live"), t("What you enter now flows into budgets, net worth and planners.", "Unachoingiza sasa kinaingia bajeti, net worth na planners.", "Kile unaingiza sai kinaingia budget, net worth na planners.", "Kile unaingiza sai kinaingia budgets, net worth, planners."))
                 OpeningRow("🗣️", t("Your language", "Lugha yako", "Lugha yako", "Lugha yako"), t("English, Kiswahili, Sheng or Mix — reports included.", "Kingereza, Kiswahili, Sheng ama Mix — ripoti pia.", "English, Swahili, Sheng ama Mix — repoti pia.", "English, Swahili, Sheng ama Mix — reports pia."))
+                Spacer(modifier = Modifier.height(8.dp))
+                // Language first: picked here, before any question, so
+                // every later screen already speaks the user's voice.
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(
+                        AppLanguage.ENGLISH to "English",
+                        AppLanguage.KISWAHILI to "Kiswahili",
+                        AppLanguage.SHENG to "Sheng",
+                        AppLanguage.MIXED to "Mix"
+                    ).forEach { (code, label) ->
+                        FilterChip(
+                            selected = picked == code,
+                            onClick = { picked = code; onLanguage(code) },
+                            label = { Text(label, color = Color.White) }
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(20.dp))
                 Text(
                     t(
