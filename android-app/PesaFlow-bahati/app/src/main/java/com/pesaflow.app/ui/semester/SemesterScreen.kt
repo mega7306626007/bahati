@@ -124,6 +124,54 @@ fun SemesterScreen(viewModel: FinanceViewModel, onNavigate: (String) -> Unit = {
                 title = "Semester oasis",
                 subtitle = "Funding · runway · fees countdown"
             )
+            // Next action: the single most useful setup step, ranked by
+            // what is missing and what matters financially. Everything
+            // else stays reachable below — this card only orders.
+            run {
+                val feesAmt = profile?.feesAmount ?: 0.0
+                val feeDueMissing = feesAmt > 0 && (profile?.feesDueDate ?: 0L) <= now
+                val fareMissing = fare.toDoubleOrNull()?.takeIf { it > 0 } == null
+                val datesMissing = (profile?.semesterStartTimestamp ?: 0L) <= 0L || !endSet
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Next action", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        when {
+                            feeDueMissing -> {
+                                Text("Your fee deadline is not set — countdowns and gap plans need it.", style = MaterialTheme.typography.bodySmall)
+                                Button(onClick = { onNavigate(NavRoutes.UNIVERSITY) }) { Text("Set fee deadline") }
+                            }
+                            fareMissing -> {
+                                Text("No one-way fare yet — fare matching and transport budgets guess without it.", style = MaterialTheme.typography.bodySmall)
+                                OutlinedTextField(
+                                    value = fare,
+                                    onValueChange = { fare = it },
+                                    label = { Text("One-way fare (KSh)") },
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Button(
+                                    onClick = {
+                                        context.getSharedPreferences("pesaflow_prefs", android.content.Context.MODE_PRIVATE)
+                                            .edit().putString("school_fare_one_way", fare)
+                                            .putString("min_transport_fare", minFare).apply()
+                                    },
+                                    enabled = fare.toDoubleOrNull()?.takeIf { it > 0 } != null
+                                ) { Text("Save fare") }
+                            }
+                            datesMissing -> {
+                                Text("Semester dates are not set — runway and countdowns stay blank without them.", style = MaterialTheme.typography.bodySmall)
+                                Button(onClick = { onNavigate(NavRoutes.UNIVERSITY) }) { Text("Set semester dates") }
+                            }
+                            else -> Text("Semester setup is complete — everything below is live. 🎓", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
             com.pesaflow.app.ui.theme.ExplainableAmount(
                 amount = "KSh ${financialSnapshot.flexible.toDouble().toInt()}",
                 label = "Flexible money · term",

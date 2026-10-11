@@ -25,6 +25,16 @@ fun RecurringScreen(
     val preview = remember(transactions) {
         buildRecurringPreview(transactions)
     }
+    // Session dismissals: uncertain patterns the user rejects stay
+    // hidden until the next scan recomputes them. Never auto-confirmed.
+    var dismissed by remember { mutableStateOf(setOf<String>()) }
+    fun dismissKey(p: RecurringPattern) = p.merchant + "|" + p.amount.toInt().toString()
+    val livePatterns = remember(preview, dismissed) {
+        preview.patterns.filter { dismissKey(it) !in dismissed }
+    }
+    val liveAtRisk = remember(preview, dismissed) {
+        preview.atRisk.filter { dismissKey(it) !in dismissed }
+    }
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         item {
             Text("🔄 Recurring Transactions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -38,8 +48,13 @@ fun RecurringScreen(
                 )
             }
         }
-        items(preview.patterns) { pattern ->
+        // Confidence-ordered already (engine sorts desc). High-confidence
+        // patterns get one decisive action; anything shaky must be opened
+        // and verified first — never one-tapped into a bill.
+        items(livePatterns) { pattern ->
             var billed by remember(pattern.merchant, pattern.amount) { mutableStateOf(false) }
+            var showDetails by remember(pattern.merchant, pattern.amount) { mutableStateOf(false) }
+            val high = pattern.confidence >= 0.75f
             Card(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 colors = CardDefaults.cardColors(
@@ -51,28 +66,53 @@ fun RecurringScreen(
                         Text(pattern.merchant, fontWeight = FontWeight.Bold)
                         Text("Confidence: ${"%.0f".format(pattern.confidence * 100)}%")
                     }
-                    Text(pattern.suggestion)
                     Text("KSh ${pattern.amount.toInt()} · every ${pattern.medianIntervalDays}d · ${pattern.occurrences}x")
-                    Text("Next expected: ${java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(pattern.nextExpectedDate))}")
+                    if (high) {
+                        Text(pattern.suggestion)
+                        Text("Next expected: ${java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(pattern.nextExpectedDate))}")
+                    }
                     if (pattern.variance > 0.3) {
                         Text("⚠️ Irregular pattern — verify", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                     }
                     if (!billed) {
-                        TextButton(onClick = {
-                            onMakeBill(pattern)
-                            billed = true
-                        }) { Text("Make bill 📅 — remind me on ${java.text.SimpleDateFormat("d MMM", java.util.Locale.getDefault()).format(java.util.Date(pattern.nextExpectedDate))}") }
+                        if (high) {
+                            Button(onClick = {
+                                onMakeBill(pattern)
+                                billed = true
+                            }) { Text("Confirm as recurring") }
+                        } else {
+                            TextButton(onClick = { showDetails = !showDetails }) {
+                                Text(if (showDetails) "Hide details" else "Review details")
+                            }
+                        }
+                        if (showDetails || high) {
+                            if (!high) {
+                                Text(pattern.suggestion)
+                                Text("Next expected: ${java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(pattern.nextExpectedDate))}")
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (!high) {
+                                    TextButton(onClick = {
+                                        onMakeBill(pattern)
+                                        billed = true
+                                    }) { Text("Make bill 📅") }
+                                }
+                                TextButton(onClick = { dismissed = dismissed + dismissKey(pattern) }) {
+                                    Text("Not recurring", color = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        }
                     } else {
                         Text("Billed ✓ — find it under Bills.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
         }
-        if (preview.atRisk.isNotEmpty()) {
+        if (liveAtRisk.isNotEmpty()) {
             item {
                 Text("⚠️ Irregular patterns to verify", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
             }
-            items(preview.atRisk) { pattern ->
+            items(liveAtRisk) { pattern ->
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                     colors = CardDefaults.cardColors(containerColor = PesaWarningContainer)
@@ -80,6 +120,9 @@ fun RecurringScreen(
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("⚠️ ${pattern.merchant} — ${pattern.occurrences}x with high variance", fontWeight = FontWeight.Bold)
                         Text("KSh ${pattern.amount.toInt()} · every ${pattern.medianIntervalDays}d")
+                        TextButton(onClick = { dismissed = dismissed + dismissKey(pattern) }) {
+                            Text("Not recurring", color = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             }

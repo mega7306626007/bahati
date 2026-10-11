@@ -589,6 +589,7 @@ fun BillsScreen(viewModel: FinanceViewModel) {
         var paybill by remember { mutableStateOf("") }
         var frequency by remember { mutableStateOf("ONE_TIME") }
         var paidBy by remember { mutableStateOf("ME") }
+        var showDetails by remember { mutableStateOf(false) }
         val frequencies = listOf("ONE_TIME", "WEEKLY", "MONTHLY")
 
         AlertDialog(
@@ -596,10 +597,16 @@ fun BillsScreen(viewModel: FinanceViewModel) {
             title = { Text("New Bill") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Bill name") })
+                    // Essentials first: name, amount, due. Recurrence,
+                    // paybill and payer wait behind one disclosure.
+                    OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Bill name (e.g. Rent)") })
                     OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text("Amount (KSh)") })
-                    OutlinedTextField(value = category, onValueChange = { category = it }, label = { Text("Category") })
                     OutlinedTextField(value = daysUntilDue, onValueChange = { daysUntilDue = it }, label = { Text("Due in (days)") })
+                    TextButton(onClick = { showDetails = !showDetails }) {
+                        Text(if (showDetails) "Fewer details" else "More details: category, repeat, paybill, payer")
+                    }
+                    if (showDetails) {
+                    OutlinedTextField(value = category, onValueChange = { category = it }, label = { Text("Category") })
                     OutlinedTextField(value = paybill, onValueChange = { paybill = it }, label = { Text("Paybill / till (optional)") })
                     BillPayerPicker(paidBy) { paidBy = it }
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -610,6 +617,7 @@ fun BillsScreen(viewModel: FinanceViewModel) {
                                 label = { Text(if (f == "ONE_TIME") "Once" else f.lowercase().replaceFirstChar { it.uppercase() }) }
                             )
                         }
+                    }
                     }
                 }
             },
