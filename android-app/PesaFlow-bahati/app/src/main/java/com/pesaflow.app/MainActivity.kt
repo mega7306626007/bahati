@@ -669,29 +669,31 @@ private fun MoreScreen(lang: com.pesaflow.app.data.models.AppLanguage, onSelect:
     )
     // Routes only — every visible word resolves through AppCopy, so the
     // whole menu follows the app language instead of staying English.
+    // Hick's Law: 5 groups, each collapsed to its 3 most relevant entries
+    // by default. "Show all" expands the rest — no feature is hidden.
     val entries = listOf(
-        Entry("Money", Icons.Filled.Menu, NavRoutes.ANALYTICS),
-        Entry("Money", Icons.Filled.DateRange, NavRoutes.REPORTS),
-        Entry("Money", Icons.Filled.AccountBalance, NavRoutes.NETWORTH),
-        Entry("Money", Icons.Filled.AccountBalanceWallet, NavRoutes.INCOME),
-        Entry("Money", Icons.Filled.Search, NavRoutes.SEARCH),
+        Entry("Money & Records", Icons.Filled.Menu, NavRoutes.ANALYTICS),
+        Entry("Money & Records", Icons.Filled.DateRange, NavRoutes.REPORTS),
+        Entry("Money & Records", Icons.Filled.AccountBalance, NavRoutes.NETWORTH),
+        Entry("Money & Records", Icons.Filled.AccountBalanceWallet, NavRoutes.INCOME),
+        Entry("Money & Records", Icons.Filled.Search, NavRoutes.SEARCH),
         Entry("Planning", Icons.Filled.Home, NavRoutes.BILLS),
         Entry("Planning", Icons.Filled.AccountBox, NavRoutes.DEBT),
         Entry("Planning", Icons.Filled.Savings, NavRoutes.SAVINGS),
         Entry("Planning", Icons.Filled.Star, NavRoutes.GOALS),
         Entry("Planning", Icons.Filled.DateRange, NavRoutes.RECURRING),
-        Entry("Student life", Icons.Filled.DateRange, NavRoutes.SEMESTER),
-        Entry("Student life", Icons.Filled.Favorite, NavRoutes.MEALS),
-        Entry("Student life", Icons.Filled.DateRange, NavRoutes.KITCHEN),
-        Entry("Student life", Icons.Filled.ShoppingCart, NavRoutes.THINGS),
-        Entry("Student life", Icons.Filled.Star, NavRoutes.UNIVERSITY),
-        Entry("Tools", Icons.Filled.Star, NavRoutes.EXPORT),
-        Entry("Tools", Icons.Filled.Person, NavRoutes.CONTACTS),
-        Entry("Tools", Icons.Filled.CheckCircle, NavRoutes.REVIEW),
-        Entry("Tools", Icons.Filled.Info, NavRoutes.INFO),
-        Entry("App", Icons.Filled.Face, NavRoutes.BUDDY),
-        Entry("App", Icons.Filled.Favorite, NavRoutes.NOTIFICATIONS),
-        Entry("App", Icons.Filled.Settings, NavRoutes.SETTINGS)
+        Entry("Student Life", Icons.Filled.DateRange, NavRoutes.SEMESTER),
+        Entry("Student Life", Icons.Filled.Favorite, NavRoutes.MEALS),
+        Entry("Student Life", Icons.Filled.DateRange, NavRoutes.KITCHEN),
+        Entry("Student Life", Icons.Filled.ShoppingCart, NavRoutes.THINGS),
+        Entry("Student Life", Icons.Filled.Star, NavRoutes.UNIVERSITY),
+        Entry("Insights & Reports", Icons.Filled.Info, NavRoutes.INFO),
+        Entry("Insights & Reports", Icons.Filled.CheckCircle, NavRoutes.REVIEW),
+        Entry("Settings & Privacy", Icons.Filled.Star, NavRoutes.EXPORT),
+        Entry("Settings & Privacy", Icons.Filled.Person, NavRoutes.CONTACTS),
+        Entry("Settings & Privacy", Icons.Filled.Face, NavRoutes.BUDDY),
+        Entry("Settings & Privacy", Icons.Filled.Favorite, NavRoutes.NOTIFICATIONS),
+        Entry("Settings & Privacy", Icons.Filled.Settings, NavRoutes.SETTINGS)
     )
     val shown = entries.map {
         ShownEntry(
@@ -741,9 +743,21 @@ private fun MoreScreen(lang: com.pesaflow.app.data.models.AppLanguage, onSelect:
                 }
             } else {
                 filtered.groupBy { it.section }.forEach { (section, sectionEntries) ->
+                    val collapsed = remember(section) { mutableStateOf(true) }
+                    val visible = if (collapsed.value) sectionEntries.take(3) else sectionEntries
+                    val hidden = sectionEntries.size - visible.size
                     MoreSection(section) {
-                        sectionEntries.forEach { entry ->
+                        visible.forEach { entry ->
                             MoreRow(entry.icon, entry.title, entry.subtitle) { onSelect(entry.route) }
+                        }
+                        if (hidden > 0) {
+                            TextButton(onClick = { collapsed.value = !collapsed.value }) {
+                                Text(
+                                    if (collapsed.value) "Show $hidden more" else "Show less",
+                                    style = com.pesaflow.app.ui.theme.ppTypography.bodySmall,
+                                    color = com.pesaflow.app.ui.theme.ppColors.gold
+                                )
+                            }
                         }
                     }
                 }

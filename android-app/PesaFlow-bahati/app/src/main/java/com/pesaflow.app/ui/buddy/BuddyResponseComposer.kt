@@ -27,6 +27,12 @@ object BuddyResponseComposer {
 
     private fun ksh(amount: Double): String = MoneyFormatter.compact(Money.of(amount))
 
+    // Clean rounded KSh for safe-spend answers: "KSh 84,000" not "83.9k".
+    private fun roundedKsh(amount: Double): String {
+        val rounded = (amount / 100.0).toInt() * 100
+        return "KSh " + java.text.NumberFormat.getNumberInstance(java.util.Locale.US).format(rounded)
+    }
+
     fun compose(intent: BuddyIntent, state: BuddyReadState): BuddyOutcome = when (intent) {
         BuddyIntent.QueryBalance -> {
             val why = state.balanceExplanation?.let { " $it" }.orEmpty()
@@ -43,7 +49,9 @@ object BuddyResponseComposer {
         BuddyIntent.QuerySafeSpend ->
             BuddyOutcome.Answer(
                 BuddyStrings.safeSpend(
-                    ksh(state.safeToday), ksh(state.safeWeek),
+                    // Rounded to clean hundreds — "KSh 84,000" reads as a
+                    // real number; "83.9k" reads as a typo-ridden guess.
+                    roundedKsh(state.safeToday), roundedKsh(state.safeWeek),
                     BuddyStrings.qualityNote(state.dataQuality, state.lang),
                     state.lang
                 )

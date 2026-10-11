@@ -1112,6 +1112,7 @@ fun weekdayShort(day: String, lang: AppLanguage): String {
 
 fun tabLabel(tab: String, lang: AppLanguage): String = when (tab) {
     "Plan" -> Copy4("Plan", "Mpango", "Plan", "Plan").pick(lang)
+    "Money & Records" -> Copy4("Money & Records", "Pesa na Rekodi", "Doh na Records", "Money").pick(lang)
     "Money" -> Copy4("Money", "Pesa", "Doh", "Doh").pick(lang)
     "Insight" -> Copy4("Insight", "Ufahamu", "Rada", "Rada").pick(lang)
     "You" -> Copy4("You", "Yangu", "Mimi", "You").pick(lang)
@@ -1120,7 +1121,10 @@ fun tabLabel(tab: String, lang: AppLanguage): String = when (tab) {
 
 fun moreSectionName(section: String, lang: AppLanguage): String = when (section) {
     "Planning" -> Copy4("Planning", "Mipango", "Maplan", "Planning").pick(lang)
+    "Student Life" -> Copy4("Student Life", "Maisha ya Chuo", "Life ya Chuo", "Campus life").pick(lang)
     "Student life" -> Copy4("Student life", "Maisha ya chuo", "Life ya chuo", "Campus life").pick(lang)
+    "Insights & Reports" -> Copy4("Insights & Reports", "Maarifa na Ripoti", "Insights na Repoti", "Insights").pick(lang)
+    "Settings & Privacy" -> Copy4("Settings & Privacy", "Mipangilio na Faragha", "Settings na Privacy", "Settings").pick(lang)
     "Tools" -> Copy4("Tools", "Zana", "Matools", "Tools").pick(lang)
     "App" -> Copy4("App", "App", "App", "App").pick(lang)
     else -> Copy4("Money", "Pesa", "Doh", "Money").pick(lang)

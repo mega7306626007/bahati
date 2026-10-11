@@ -192,14 +192,38 @@ fun PesaBuddyAssistant(
             )
 
 
-            // Quick suggestions (tap to ask)
+            // Hick's Law: 4 contextual prompts, not a wall of 12. The most
+            // relevant questions for THIS student right now — everything
+            // else stays one tap away under "More".
             if (messages.value.isEmpty()) {
+                val financial = viewModel.financialSnapshot.value
+                val pendings = viewModel.pendingTransactions.value
+                val budgets = viewModel.budgets.value
+                val goals = viewModel.savingsGoals.value
+                val contextual = buildList {
+                    if (pendings.isNotEmpty()) add("Review pending?")
+                    if (financial.flexible.toDouble() > 0) add("Why safe today?")
+                    if (budgets.isNotEmpty()) add("How am I doing?")
+                    if (goals.isNotEmpty()) add("Laptop by December?")
+                    if (isEmpty()) add("Explain the app")
+                }.take(4)
+                val allPrompts = listOf("Explain the app", "Why safe today?", "Review pending?", "Confirm sure ones?", "How am I doing?", "Top spends?", "Run out?", "Bills due?", "Afford 500?", "Laptop by December?", "My stock?", "What I lack?")
+                val remaining = allPrompts.filter { it !in contextual }
+                var showMore by remember { mutableStateOf(false) }
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf("Explain the app", "Why safe today?", "Review pending?", "Confirm sure ones?", "How am I doing?", "Top spends?", "Run out?", "Bills due?", "Afford 500?", "Laptop by December?", "My stock?", "What I lack?").forEach { s ->
+                    contextual.forEach { s ->
                         AssistChip(onClick = { chatFocused = true; processUserInput(s, viewModel, messages, onNavigate = onNavigate, screenContext = screenContext) }, label = { Text(s) })
+                    }
+                    if (remaining.isNotEmpty()) {
+                        AssistChip(onClick = { showMore = !showMore }, label = { Text(if (showMore) "Less" else "More") })
+                        if (showMore) {
+                            remaining.forEach { s ->
+                                AssistChip(onClick = { chatFocused = true; processUserInput(s, viewModel, messages, onNavigate = onNavigate, screenContext = screenContext) }, label = { Text(s) })
+                            }
+                        }
                     }
                 }
             }

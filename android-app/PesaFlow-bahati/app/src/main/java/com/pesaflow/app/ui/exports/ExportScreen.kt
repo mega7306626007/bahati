@@ -130,6 +130,48 @@ fun ExportScreen(
         item {
             Card(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
+                    Text("PDF Statement Report", fontWeight = FontWeight.Bold)
+                    Text("Full M-Pesa transaction report with category breakdown — uniquely branded, printable.", style = MaterialTheme.typography.bodySmall)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val pdfRange = remember(rangeStart, rangeEnd) {
+                        val rs = rangeStart
+                        val re = rangeEnd
+                        if (rs == null || re == null) "All time"
+                        else {
+                            val fmt = java.text.SimpleDateFormat("d MMM yyyy", java.util.Locale.getDefault())
+                            "${fmt.format(java.util.Date(rs))} – ${fmt.format(java.util.Date(re))}"
+                        }
+                    }
+                    val pdfContext = androidx.compose.ui.platform.LocalContext.current
+                    Button(onClick = {
+                        val rs = rangeStart ?: Long.MIN_VALUE
+                        val re = rangeEnd ?: Long.MAX_VALUE
+                        val report = com.pesaflow.app.data.exports.statementReportModel(
+                            transactions,
+                            startMs = rs,
+                            endMs = re
+                        )
+                        val doc = com.pesaflow.app.data.exports.renderStatementReportPdf(report)
+                        val file = java.io.File(pdfContext.cacheDir, "pesaflow-statement-${report.generatedLabel.replace(" ", "-")}.pdf")
+                        file.outputStream().use { doc.writeTo(it) }
+                        doc.close()
+                        val uri = androidx.core.content.FileProvider.getUriForFile(
+                            pdfContext, "${pdfContext.packageName}.fileprovider", file
+                        )
+                        val share = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                            type = "application/pdf"
+                            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        pdfContext.startActivity(android.content.Intent.createChooser(share, "Share PDF statement"))
+                    }) { Text("Generate PDF Statement ($pdfRange)") }
+                }
+            }
+        }
+        item { Spacer(modifier = Modifier.height(12.dp)) }
+        item {
+            Card(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Text("Backup (JSON)", fontWeight = FontWeight.Bold)
                     Text("Full database backup with every table, compiler-checked.", style = MaterialTheme.typography.bodySmall)
                     Spacer(modifier = Modifier.height(8.dp))

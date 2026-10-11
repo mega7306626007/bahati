@@ -336,7 +336,7 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
         // 0 tx with a Jan-1970 date although the ledger holds their rows.
         // Rebuild once from the ledger, then never again.
         if (!prefs.getBoolean("contact_stats_v1", false)) {
-            safeLaunch {
+            safeLaunch(Dispatchers.IO) {
                 try {
                     ContactBook.rebuildStats(prefs(), repository.allTransactions.first())
                     prefs().edit().putBoolean("contact_stats_v1", true).apply()
@@ -364,7 +364,7 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
     // saved contact its true history immediately (so the card agrees with
     // search on first sight).
     fun refreshContactStats() {
-        safeLaunch {
+        safeLaunch(Dispatchers.IO) {
             try {
                 com.pesaflow.app.data.ledger.ContactBook.rebuildStats(
                     prefs(), repository.allTransactions.first()
@@ -398,7 +398,7 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
             daysBack = 1,
             maxRows = 150,
             onDone = { found, queued, feeTotal, error ->
-                safeLaunch {
+                safeLaunch(Dispatchers.IO) {
                     try {
                         com.pesaflow.app.data.ledger.ContactBook.rebuildStats(
                             prefs(), repository.allTransactions.first()

@@ -30,9 +30,9 @@ fun RhythmConfirmCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = when (hypothesis.kind) {
-                RhythmKind.FARE_WINDOW -> Color(0xFFFFF8E1)
-                RhythmKind.RENT_DAY -> Color(0xFFE8F5E9)
-                RhythmKind.PAYDAY -> Color(0xFFE3F2FD)
+                RhythmKind.FARE_WINDOW -> Color(0xFFFFE082)
+                RhythmKind.RENT_DAY -> Color(0xFFC8E6C9)
+                RhythmKind.PAYDAY -> Color(0xFFBBDEFB)
                 else -> MaterialTheme.colorScheme.surfaceVariant
             }
         )

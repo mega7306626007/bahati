@@ -271,12 +271,14 @@ fun QuickAddDialog(
                         TextButton(onClick = { applySmart(p) }) { Text("⚡ ${p.category} · KSh ${p.amount.toInt()} — tap to fill") }
                     }
                 }
-                // Spent / Received / Saved — smart defaults follow the mode.
+                // Hick's Law: four clear type choices first. Everything else
+                // reveals only after the type is known — no wall of fields.
                 com.pesaflow.app.ui.theme.SegChoice(
                     options = listOf(
                         com.pesaflow.app.ui.theme.SegOption("Spent", "− Spent"),
                         com.pesaflow.app.ui.theme.SegOption("Received", "+ Received"),
-                        com.pesaflow.app.ui.theme.SegOption("Saved", "◉ Saved")
+                        com.pesaflow.app.ui.theme.SegOption("Saved", "◉ Saved"),
+                        com.pesaflow.app.ui.theme.SegOption("Transfer", "↔ Transfer")
                     ),
                     selected = entryMode,
                     onSelect = { v ->
@@ -298,6 +300,7 @@ fun QuickAddDialog(
                         entryMode = when (last.type) {
                             TransactionType.INCOME -> "Received"
                             TransactionType.SAVING -> "Saved"
+                            TransactionType.TRANSFER -> "Transfer"
                             else -> "Spent"
                         }
                     }) { Text("↻ Repeat ${last.merchant} · ${last.amount.toInt()}") }
@@ -471,11 +474,35 @@ fun QuickAddDialog(
                     val amt = AmountParser.parse(inputAmount) ?: 0.0
                     if (amt > 0) persistTemplates(templates.filter { it[0] != name } + listOf(listOf(name, inputAmount, inputMerchant, selectedCategory, entryType.name, selectedMethod.name)))
                 }) { Text("★ Save current as template") }
-                // Elegant category chips — consistent treatment, no wall of fields
+                // Hick's Law: most-used categories first (learned from ledger),
+                // the rest under an expandable "All categories" — no wall of
+                // 11 identical chips competing for attention.
                 Text(if (entryMode == "Received") "Source" else "Category", style = MaterialTheme.typography.labelLarge)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(PesaSpacing.xs), verticalArrangement = Arrangement.spacedBy(PesaSpacing.xs)) {
-                    (if (entryMode == "Received") QuickIncomeSources else QuickCategories).forEach { c ->
-                        FilterChip(selected = selectedCategory == c, onClick = { keyboard?.hide(); selectedCategory = c; categoryTouched = true }, label = { Text(c) })
+                run {
+                    val allCats = if (entryMode == "Received") QuickIncomeSources else QuickCategories
+                    val topCats = remember(recentTx, entryMode) {
+                        recentTx.filter { it.type == entryType || (entryMode == "Received" && it.type == TransactionType.INCOME) }
+                            .groupBy { it.category }.mapValues { it.value.size }
+                            .entries.sortedByDescending { it.value }
+                            .map { it.key }
+                            .filter { it in allCats }
+                            .take(4)
+                    }
+                    val shown = topCats.ifEmpty { allCats.take(3) }
+                    val hidden = allCats.filter { it !in shown }
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(PesaSpacing.xs), verticalArrangement = Arrangement.spacedBy(PesaSpacing.xs)) {
+                        shown.forEach { c ->
+                            FilterChip(selected = selectedCategory == c, onClick = { keyboard?.hide(); selectedCategory = c; categoryTouched = true }, label = { Text(c) })
+                        }
+                        if (hidden.isNotEmpty()) {
+                            var showAll by remember { mutableStateOf(false) }
+                            FilterChip(selected = showAll, onClick = { showAll = !showAll }, label = { Text(if (showAll) "Less ▴" else "All ${allCats.size} ▾") })
+                            if (showAll) {
+                                hidden.forEach { c ->
+                                    FilterChip(selected = selectedCategory == c, onClick = { keyboard?.hide(); selectedCategory = c; categoryTouched = true }, label = { Text(c) })
+                                }
+                            }
+                        }
                     }
                 }
                 val suggestedCat = remember(inputMerchant, entryMode) { suggestFor(inputMerchant, entryType) }

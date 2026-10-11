@@ -13,10 +13,10 @@ import java.util.Date
 import java.util.Locale
 
 
-// PesaSense-style M-Pesa transaction report: green header (period, count,
-// generated-at), INCOME / EXPENSES / NET / EXCLUDED strip, spending-by-
-// category bars, then the full DATE · TIME · CODE · TYPE · AMOUNT · FEES ·
-// CATEGORY · RECIPIENT · SIM · EXCL table across pages.
+// PesaFlow-branded M-Pesa transaction report: navy header with gold accent,
+// period + count + generated-at, INCOME / EXPENSES / NET / EXCLUDED strip,
+// spending-by-category bars, then the full table across pages. Unique to
+// PesaFlow — not a PesaSense clone.
 //
 // Money rules (documented, matching the app everywhere else):
 // - income = ALL inflows (borrowed/internal legs included — wallet truth);
@@ -132,9 +132,10 @@ private const val PAGE_H = 842
 private const val MARGIN = 36
 private const val CONTENT_W = PAGE_W - MARGIN * 2
 
-private val GREEN = Color.rgb(30, 138, 77)
-private val GREEN_DARK = Color.rgb(20, 100, 55)
-private val GREEN_PALE = Color.rgb(226, 242, 233)
+private val NAVY = Color.rgb(13, 59, 102)
+private val NAVY_DARK = Color.rgb(8, 40, 70)
+private val GOLD = Color.rgb(255, 193, 7)
+private val GOLD_PALE = Color.rgb(255, 248, 225)
 private val INK = Color.rgb(33, 33, 33)
 private val GREY = Color.rgb(120, 120, 120)
 private val RED = Color.rgb(200, 50, 50)
@@ -163,10 +164,10 @@ fun renderStatementReportPdf(report: StatementReport): PdfDocument {
     val headValGreenP = paint(11f, true, POS)
     val headValRedP = paint(11f, true, RED)
     val headValInkP = paint(11f, true, INK)
-    val sectionP = paint(10f, true, GREEN_DARK)
+    val sectionP = paint(10f, true, NAVY_DARK)
     val bodyP = paint(8f, false, INK)
     val smallP = paint(7.5f, false, GREY)
-    val tableHeadP = paint(7.5f, true, GREEN_DARK)
+    val tableHeadP = paint(7.5f, true, NAVY_DARK)
     val cellP = paint(7.5f, false, INK)
     val cellRedP = paint(7.5f, true, RED)
     val cellGreenP = paint(7.5f, true, POS)
@@ -196,7 +197,7 @@ fun renderStatementReportPdf(report: StatementReport): PdfDocument {
     // row count, so "Page N" here is exact and honest.
     fun footer() {
         canvas.drawText(
-            "PesaPlanner — M-Pesa Transaction Report · Page $pageNo",
+            "PesaFlow — M-Pesa Transaction Report · Page $pageNo",
             MARGIN.toFloat(), (PAGE_H - 20).toFloat(), footP
         )
     }
@@ -218,9 +219,13 @@ fun renderStatementReportPdf(report: StatementReport): PdfDocument {
     y = MARGIN.toFloat()
     canvas.drawRect(
         0f, 0f, PAGE_W.toFloat(), 86f,
-        Paint().apply { color = GREEN }
+        Paint().apply { color = NAVY }
     )
-    canvas.drawText("PesaPlanner", MARGIN.toFloat(), 32f, paint(19f, true, Color.WHITE))
+    canvas.drawRect(
+        0f, 86f, PAGE_W.toFloat(), 90f,
+        Paint().apply { color = GOLD }
+    )
+    canvas.drawText("PesaFlow", MARGIN.toFloat(), 32f, paint(19f, true, Color.WHITE))
     canvas.drawText("M-Pesa Transaction Report", MARGIN.toFloat(), 50f, subP)
     canvas.drawText(report.periodLabel, (PAGE_W - MARGIN - 170).toFloat(), 30f, subP)
     canvas.drawText(report.count.toString() + " transactions", (PAGE_W - MARGIN - 170).toFloat(), 46f, subP)
@@ -253,7 +258,7 @@ fun renderStatementReportPdf(report: StatementReport): PdfDocument {
         val barX = MARGIN + 128f
         val barW = 200f * (slice.total / maxCat).toFloat().coerceIn(0f, 1f)
         canvas.drawRect(barX, y - 8f, barX + 200f, y - 1f, Paint().apply { color = Color.rgb(235, 235, 235) })
-        canvas.drawRect(barX, y - 8f, barX + barW, y - 1f, Paint().apply { color = GREEN })
+        canvas.drawRect(barX, y - 8f, barX + barW, y - 1f, Paint().apply { color = GOLD })
         canvas.drawText(money(slice.total), barX + 206f, y, cellP)
         canvas.drawText(slice.pct.toString() + "%", barX + 262f, y, smallP)
         canvas.drawText(slice.count.toString() + " txns", barX + 292f, y, smallP)
@@ -273,7 +278,7 @@ fun renderStatementReportPdf(report: StatementReport): PdfDocument {
     need(30f)
     canvas.drawRect(
         MARGIN.toFloat(), y - 11f, (PAGE_W - MARGIN).toFloat(), y + 5f,
-        Paint().apply { color = GREEN_PALE }
+        Paint().apply { color = GOLD_PALE }
     )
     drawRow(
         canvas, y,
