@@ -4,7 +4,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -25,6 +28,13 @@ fun AnalyticsScreen(
 ) {
     val report = remember(transactions, periodDays) {
         buildAnalyticsReport(transactions, periodDays)
+    }
+    // Question-first: three questions up front, charts answer behind
+    // them. Nothing removed - advanced sections wait under one toggle.
+    var openQ by remember { mutableStateOf<String?>(null) }
+    var showAll by remember { mutableStateOf(false) }
+    fun toggleQ(q: String) {
+        openQ = if (openQ == q) null else q
     }
     LazyColumn(
         modifier = Modifier.padding(16.dp),
@@ -48,6 +58,20 @@ fun AnalyticsScreen(
         item {
             PpCard(kind = PpCardKind.LARGE) {
                 Column(verticalArrangement = Arrangement.spacedBy(ppSpacing.sm)) {
+                    Text("Start with a question", style = ppTypography.labelLarge, color = ppColors.gold)
+                    QuestionRow(question = "Where did my money go?", open = openQ == "where" || showAll, onToggle = { toggleQ("where") })
+                    QuestionRow(question = "What changed?", open = openQ == "changed" || showAll, onToggle = { toggleQ("changed") })
+                    QuestionRow(question = "What might happen next?", open = openQ == "next" || showAll, onToggle = { toggleQ("next") })
+                    TextButton(onClick = { showAll = !showAll }) {
+                        Text(if (showAll) "Hide advanced charts" else "Advanced charts")
+                    }
+                }
+            }
+        }
+        if (openQ == "where" || showAll) {
+        item {
+            PpCard(kind = PpCardKind.LARGE) {
+                Column(verticalArrangement = Arrangement.spacedBy(ppSpacing.sm)) {
                     PpSectionHeader(title = "Top category")
                     report.categorySummaries.sortedByDescending { it.total }.take(5).forEach { cat ->
                         Row(
@@ -68,6 +92,8 @@ fun AnalyticsScreen(
                 }
             }
         }
+        }
+        if (openQ == "changed" || showAll) {
         item {
             PpCard(kind = PpCardKind.LARGE) {
                 Column(verticalArrangement = Arrangement.spacedBy(ppSpacing.sm)) {
@@ -94,6 +120,8 @@ fun AnalyticsScreen(
                 }
             }
         }
+        }
+        if (openQ == "next" || showAll) {
         item {
             PpCard(kind = PpCardKind.LARGE) {
                 Column(verticalArrangement = Arrangement.spacedBy(ppSpacing.sm)) {
@@ -117,6 +145,8 @@ fun AnalyticsScreen(
                 }
             }
         }
+        }
+        if (showAll) {
         item {
             PpCard(kind = PpCardKind.LARGE) {
                 Column(verticalArrangement = Arrangement.spacedBy(ppSpacing.sm)) {
@@ -132,6 +162,8 @@ fun AnalyticsScreen(
                 }
             }
         }
+        }
+        if (openQ == "next" || showAll) {
         item {
             PpCard(kind = PpCardKind.INFO) {
                 Column(verticalArrangement = Arrangement.spacedBy(ppSpacing.sm)) {
@@ -157,7 +189,26 @@ fun AnalyticsScreen(
                 }
             }
         }
+        }
         item { Spacer(modifier = Modifier.height(80.dp)) }
+    }
+}
+
+@Composable
+private fun QuestionRow(
+    question: String,
+    open: Boolean,
+    onToggle: () -> Unit
+) {
+    TextButton(onClick = onToggle, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(question, style = ppTypography.bodyMedium, color = ppColors.textPrimary)
+            Text(if (open) "-" else "+", style = ppTypography.bodyMedium, color = ppColors.gold)
+        }
     }
 }
 

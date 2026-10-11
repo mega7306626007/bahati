@@ -962,6 +962,9 @@ fun processUserInput(
         q.contains("chama") ->
             com.pesaflow.app.ui.buddy.BuddyStrings.chamaAdvice((byCat["Savings"] ?: 0.0).toInt().toString(), cardLang)
 
+        q.contains("what if") || q.contains("simulate") || q.contains("scenario") || q.contains("suppose") || q.contains("imagine") ->
+            com.pesaflow.app.ui.buddy.BuddyStrings.scenarioMenu(cardLang)
+
         q.contains("today") || q.contains("leo") ->
             if (txs.isEmpty()) com.pesaflow.app.ui.buddy.BuddyStrings.todayEmpty(cardLang)
             else com.pesaflow.app.ui.buddy.BuddyStrings.todaySpend(todaySpend.toInt().toString(), monthExpense.toInt().toString(), cardLang)

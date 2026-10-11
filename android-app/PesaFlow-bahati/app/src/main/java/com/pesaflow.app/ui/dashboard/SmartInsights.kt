@@ -84,7 +84,47 @@ fun SmartInsightsCard(
     var muted by remember {
         mutableStateOf(insightPrefs.getStringSet("muted_insights", emptySet()) ?: emptySet())
     }
-    val shown = remember(insights, muted) { insights.filter { insightTag(it) !in muted } }
+    // Urgency ranking: overdue bills, debts and runway outrank everything;
+    // envelopes next; the rest keep engine order (stable sort). The single
+    // missing fact leads - one prompt, never a profile interrogation.
+    fun rankOf(tag: String): Int = when (tag) {
+        "missing" -> 0
+        "bills", "debts", "runway" -> 1
+        "envelopes", "tight" -> 2
+        else -> 3
+    }
+    val missingFact = remember(transactions, budgets) {
+        val fareBlank = insightPrefs.getString("school_fare_one_way", null).isNullOrBlank()
+        val monthStart = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.DAY_OF_MONTH, 1)
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val nowMs = System.currentTimeMillis()
+        val monthTx = transactions.filter { !it.isSample && it.dateTimestamp >= monthStart && it.dateTimestamp <= nowMs }
+        val transportMonth = monthTx.filter { it.type == com.pesaflow.app.data.models.TransactionType.EXPENSE && it.category.equals("Transport", ignoreCase = true) }.sumOf { it.amount }
+        val spentMonth = monthTx.filter { it.type == com.pesaflow.app.data.models.TransactionType.EXPENSE }.sumOf { it.amount }
+        when {
+            fareBlank && transportMonth > 0 -> when (lang) {
+                com.pesaflow.app.data.models.AppLanguage.KISWAHILI -> "Ukosefu mmoja: nauli yako ya kwenda. Iweke chini ya Semester - safari zilizo karibu nayo karibu na masaa ya darasa zitajifilisha kama Usafiri."
+                com.pesaflow.app.data.models.AppLanguage.SHENG -> "Missing fact moja: fare yako ya one-way. Iweke kwa Semester - rides zilizo near it around class hours zitajifile kama Transport."
+                else -> "One missing fact: your one-way fare. Add it under Semester - rides near it around class hours will file themselves as Transport."
+            }
+            budgets.isEmpty() && spentMonth > 0 -> when (lang) {
+                com.pesaflow.app.data.models.AppLanguage.KISWAHILI -> "Ukosefu mmoja: bajeti ya mwezi. Weka moja chini ya Bajeti - salama-kutumia inabaki kubahatisha bila hiyo."
+                com.pesaflow.app.data.models.AppLanguage.SHENG -> "Missing fact moja: monthly budget. Weka moja kwa Budgets - safe-to-spend inabaki guess bila hiyo."
+                else -> "One missing fact: a monthly budget. Set one under Budgets - safe-to-spend stays a guess without it."
+            }
+            else -> null
+        }
+    }
+    val shown = remember(insights, muted, missingFact) {
+        val items = insights.filter { insightTag(it) !in muted }.map { insightTag(it) to it }
+        val all = (if (missingFact != null && "missing" !in muted) listOf("missing" to missingFact) else emptyList()) + items
+        all.sortedWith(compareBy({ rankOf(it.first) })).map { it.second }
+    }
     if (shown.isEmpty() && muted.isEmpty()) return
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -95,7 +135,8 @@ fun SmartInsightsCard(
             com.pesaflow.app.ui.theme.PpInsightCard(
                 text = insight,
                 onDismiss = {
-                    val next = muted + insightTag(insight)
+                    val tag = if (missingFact != null && insight == missingFact) "missing" else insightTag(insight)
+                    val next = muted + tag
                     muted = next
                     insightPrefs.edit().putStringSet("muted_insights", next).apply()
                 }

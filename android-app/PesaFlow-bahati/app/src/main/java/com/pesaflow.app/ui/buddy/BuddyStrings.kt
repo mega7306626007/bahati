@@ -609,6 +609,31 @@ object BuddyStrings {
         "$cat hii mwezi: KSh $total. Sema 'why is flexible money this amount?' nami nitaonyesha zote zilienda wapi. 🔍"
     )
 
+    fun scenarioMenu(lang: AppLanguage): String = pick(
+        lang,
+        "What are you trying to solve? Pick one, word for word:\n"
+            + "1. Make money last longer \u2014 'will my money run out?'\n"
+            + "2. Afford something \u2014 'can I afford 5000?'\n"
+            + "3. Late income \u2014 'what if my income is 10 days late'\n"
+            + "4. Higher rent \u2014 'what if rent was 8000'\n"
+            + "5. Cut costs \u2014 'nishauri'\n"
+            + "Each opens only the inputs that matter. 🔮",
+        "Unajaribu kutatua nini? Chagua moja, neno kwa neno:\n"
+            + "1. Pesa idumu \u2014 'will my money run out?'\n"
+            + "2. Kumudu kitu \u2014 'can I afford 5000?'\n"
+            + "3. Kipato kilichochelewa \u2014 'what if my income is 10 days late'\n"
+            + "4. Kodi ya juu \u2014 'what if rent was 8000'\n"
+            + "5. Punguza gharama \u2014 'nishauri'\n"
+            + "Kila moja hufungua pembejeo zinazohusika tu. 🔮",
+        "Unatry kusolve nini? Pick moja, word for word:\n"
+            + "1. Doh idumu \u2014 'will my money run out?'\n"
+            + "2. Kuafford kitu \u2014 'can I afford 5000?'\n"
+            + "3. Income imelate \u2014 'what if my income is 10 days late'\n"
+            + "4. Rent juu \u2014 'what if rent was 8000'\n"
+            + "5. Cut costs \u2014 'nishauri'\n"
+            + "Kila moja hufungua only inputs zinamatter. 🔮"
+    )
+
     fun chamaAdvice(total: String, lang: AppLanguage): String = pick(
         lang,
         "Chama watch 🤝: KSh $total to savings groups this month. Chamas beat willpower — but confirm the payout order before adding a second one. 📋",
