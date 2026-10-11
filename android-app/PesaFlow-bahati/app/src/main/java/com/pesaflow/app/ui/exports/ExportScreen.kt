@@ -169,7 +169,10 @@ fun ExportScreen(
                             endMs = re
                         )
                         val doc = com.pesaflow.app.data.exports.renderStatementReportPdf(report)
-                        val file = java.io.File(pdfContext.cacheDir, "pesaflow-statement-${report.generatedLabel.replace(" ", "-")}.pdf")
+                        // Filename sanitized: date labels carry slashes/colons that would
+// create phantom subdirectories and crash with ENOENT.
+val safeStamp = report.generatedLabel.replace(Regex("[^A-Za-z0-9]+"), "-").trim('-').takeIf { it.isNotBlank() } ?: "report"
+val file = java.io.File(pdfContext.cacheDir, "pesaflow-statement-$safeStamp.pdf")
                         file.outputStream().use { doc.writeTo(it) }
                         doc.close()
                         val uri = androidx.core.content.FileProvider.getUriForFile(
