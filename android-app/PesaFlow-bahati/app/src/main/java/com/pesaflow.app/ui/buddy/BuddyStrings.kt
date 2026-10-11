@@ -634,6 +634,20 @@ object BuddyStrings {
             + "Kila moja hufungua only inputs zinamatter. 🔮"
     )
 
+    fun campusTips(campus: String, residence: String, food: String, commute: String, lang: AppLanguage): String = pick(
+        lang,
+        "$campus survival guide\uD83C\uDFEB: live - $residence Eat - $food Move - $commute Verify prices on the ground once.",
+        "Mwongozo wa $campus\uD83C\uDFEB: ishi - $residence Kula - $food Tembea - $commute Thibitisha bei uwandani mara moja.",
+        "$campus survival guide\uD83C\uDFEB: kuishi - $residence Kukula - $food Kutravel - $commute Verify bei kwa ground once."
+    )
+
+    fun yearTips(year: String, pattern: String, watch: String, tip: String, lang: AppLanguage): String = pick(
+        lang,
+        "Year $year playbook\uD83D\uDCCB: $pattern Watch - $watch Top move - $tip",
+        "Mbinu za mwaka $year\uD83D\uDCCB: $pattern Angalia - $watch Hatua bora - $tip",
+        "Playbook ya year $year\uD83D\uDCCB: $pattern Watch - $watch Top move - $tip"
+    )
+
     fun chamaAdvice(total: String, lang: AppLanguage): String = pick(
         lang,
         "Chama watch 🤝: KSh $total to savings groups this month. Chamas beat willpower — but confirm the payout order before adding a second one. 📋",

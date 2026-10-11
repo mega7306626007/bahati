@@ -223,6 +223,11 @@ object BuddyResponseComposer {
             }
         BuddyIntent.Unknown ->
             BuddyOutcome.Unhandled
+        // Purchase logs search the ledger in PhaseOne (resolveLogPurchase),
+        // which always intercepts first - the composer never sees them. This
+        // branch exists only for exhaustiveness and falls through to legacy.
+        is BuddyIntent.LogPurchase ->
+            BuddyOutcome.Unhandled
     }
 
     fun answerTxnQuery(filter: TxnFilter, result: TxnQueryResult, lang: com.pesaflow.app.data.models.AppLanguage): BuddyOutcome {

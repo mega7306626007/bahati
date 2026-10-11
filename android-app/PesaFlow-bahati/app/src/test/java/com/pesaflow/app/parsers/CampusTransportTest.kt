@@ -36,6 +36,14 @@ class CampusTransportTest {
     }
 
     @Test
+    fun `kabete resolves to uon atlas`() {
+        val hit = transportFor("Kabete")
+        assertNotNull(hit)
+        assertEquals("UoN", hit!!.campus)
+        assertTrue(hit.rentalAreas.isNotEmpty())
+    }
+
+    @Test
     fun `unknown universities yield nothing`() {
         assertNull(transportFor("Hogwarts"))
         assertNull(transportFor(""))

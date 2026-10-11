@@ -69,6 +69,7 @@ object BuddyIntentRouter {
         ) {
             return RoutedCommand(BuddyIntent.Unknown, entities, 0f, normalized)
         }
+        routeLogPurchase(normalized, entities)?.let { return it }
         routeAddTransaction(normalized, entities)?.let { return it }
         // Income: expected paydays draft sources; plain "record salary" stays
         // a transaction. Queries ("how much do I earn") answer from the ledger.
@@ -174,6 +175,23 @@ object BuddyIntentRouter {
             BuddyIntent.AddTransaction(amount, category, merchant, income),
             entities, if (amount != null) 0.75f else 0.5f, normalized
         )
+    }
+
+    private val BOUGHT_VERBS = listOf("bought", "buy", "purchased", "nunua", "nilinunua", "nimenunua")
+
+    // Past purchases ("I bought shoes at 2800 last month"): the money
+    // already left, so this searches the ledger instead of drafting a new
+    // row. Amount is mandatory - without it there is nothing to match.
+    private fun routeLogPurchase(normalized: String, entities: BuddyEntities): RoutedCommand? {
+        if (!hasVerb(normalized, *BOUGHT_VERBS.toTypedArray())) return null
+        val amount = entities.amount ?: return null
+        val item = merchantRemainder(normalized, amount, entities.category)?.takeIf { it.isNotBlank() } ?: return null
+        val monthOffset = when {
+            normalized.contains("last month") || normalized.contains("lastmonth") || normalized.contains("mwezi uliopita") -> 1
+            normalized.contains("this month") || normalized.contains("mwezi huu") -> 0
+            else -> null
+        }
+        return RoutedCommand(BuddyIntent.LogPurchase(item, amount, monthOffset), entities, 0.8f, normalized)
     }
 
     private val PLAN_WORDS = listOf("survive", "surviv", "stretch", "make it", "prepare", "plan")

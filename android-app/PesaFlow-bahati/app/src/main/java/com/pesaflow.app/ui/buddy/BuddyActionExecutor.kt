@@ -125,7 +125,8 @@ object BuddyActionExecutor {
             type = if (command.income) TransactionType.INCOME else TransactionType.EXPENSE,
             category = command.category,
             merchant = command.merchant ?: command.category,
-            method = PaymentMethod.MPESA
+            method = PaymentMethod.MPESA,
+            dateTimestamp = command.dateTimestamp ?: System.currentTimeMillis()
         )
         val kind = if (command.income) "income" else "expense"
         val who = command.merchant?.let { " ($it)" }.orEmpty()

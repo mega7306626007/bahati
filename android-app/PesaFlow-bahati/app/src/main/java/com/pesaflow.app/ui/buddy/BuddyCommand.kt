@@ -14,7 +14,8 @@ sealed interface BuddyCommand {
         val amount: Double,
         val category: String,
         val merchant: String?,
-        val income: Boolean
+        val income: Boolean,
+        val dateTimestamp: Long? = null
     ) : BuddyCommand
 
     // One or many ledger rows filed under a new category (canonical

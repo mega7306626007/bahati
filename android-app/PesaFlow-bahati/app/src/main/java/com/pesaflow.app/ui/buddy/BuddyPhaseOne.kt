@@ -92,6 +92,8 @@ object BuddyPhaseOne {
                 val result = BuddyTxnQuery.summarize(BuddyTxnQuery.filter(txs, intent.filter))
                 return BuddyResponseComposer.answerTxnQuery(intent.filter, result, state.lang)
             }
+            is BuddyIntent.LogPurchase ->
+                return resolveLogPurchase(txs, intent, lang)
             is BuddyIntent.Reclassify ->
                 return resolveMutation(
                     txs, intent.merchant, intent.amount,
@@ -332,6 +334,52 @@ object BuddyPhaseOne {
             }
             is TxnResolution.Multiple ->
                 BuddyResponseComposer.askWhich(r.candidates, verb, lang = lang)
+        }
+    }
+
+    // Purchase log: search the (month-windowed) ledger for what the user
+    // bought. Single match files it under the inferred category on a
+    // confirm card; ambiguity asks numbered; a miss offers a backdated add.
+    private fun resolveLogPurchase(
+        txs: List<com.pesaflow.app.data.models.Transaction>,
+        intent: BuddyIntent.LogPurchase,
+        lang: com.pesaflow.app.data.models.AppLanguage
+    ): BuddyOutcome {
+        val now = java.util.Calendar.getInstance()
+        val window = intent.monthOffset?.let { off ->
+            val targetMonth = (now.get(java.util.Calendar.MONTH) - off).mod(12)
+            val targetYear = now.get(java.util.Calendar.YEAR) -
+                (if (now.get(java.util.Calendar.MONTH) - off < 0) 1 else 0)
+            txs.filter {
+                val c = java.util.Calendar.getInstance().apply { timeInMillis = it.dateTimestamp }
+                c.get(java.util.Calendar.MONTH) == targetMonth && c.get(java.util.Calendar.YEAR) == targetYear
+            }
+        } ?: txs
+        val guess = com.pesaflow.app.data.parsers.MpesaParser.inferCategory(
+            intent.item, com.pesaflow.app.data.models.TransactionType.EXPENSE, intent.item
+        )
+        return when (val r = BuddyTxnResolver.resolve(
+            window,
+            intent.item,
+            intent.amount,
+            com.pesaflow.app.ui.dashboard.PendingCandidateAction.Reclassify(guess)
+        )) {
+            TxnResolution.None -> {
+                val backdate = intent.monthOffset?.let { off ->
+                    java.util.Calendar.getInstance().apply {
+                        set(java.util.Calendar.DAY_OF_MONTH, 15)
+                        add(java.util.Calendar.MONTH, -off)
+                    }.timeInMillis
+                }
+                val command = BuddyCommand.AddTransaction(intent.amount, guess, intent.item, false, backdate)
+                BuddyOutcome.ProposeCommand(command, BuddyResponseComposer.summarize(command, lang))
+            }
+            is TxnResolution.Single -> {
+                val command = BuddyCommand.ReclassifyTransaction(r.txIds, guess)
+                BuddyOutcome.ProposeCommand(command, BuddyResponseComposer.summarize(command, lang))
+            }
+            is TxnResolution.Multiple ->
+                BuddyResponseComposer.askWhich(r.candidates, "file as $guess", lang = lang)
         }
     }
 }

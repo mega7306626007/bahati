@@ -24,6 +24,15 @@ class CampusFoodGuideTest {
     }
 
     @Test
+    fun `kabete and chiromo resolve to uon pack`() {
+        listOf("Kabete", "Lower Kabete", "Chiromo", "UoN Kabete Campus").forEach { q ->
+            val spots = spotsFor(q)
+            assertTrue(q, spots.isNotEmpty())
+            assertTrue(spots.all { it.university == "UoN" })
+        }
+    }
+
+    @Test
     fun `kenyatta resolves to ku before nairobi rule`() {
         val spots = spotsFor("Kenyatta University")
         assertTrue(spots.isNotEmpty())

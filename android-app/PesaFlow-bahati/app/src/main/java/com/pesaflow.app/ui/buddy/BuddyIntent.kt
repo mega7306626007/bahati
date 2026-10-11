@@ -86,5 +86,9 @@ sealed interface BuddyIntent {
         val merchant: String?,
         val income: Boolean
     ) : BuddyIntent
+    // Purchase log ("I bought shoes at 2800 last month"): searches the
+    // ledger for the purchase first. A match proposes filing it under the
+    // inferred category; a miss offers to add it backdated. Confirm card first.
+    data class LogPurchase(val item: String, val amount: Double, val monthOffset: Int?) : BuddyIntent
     data object Unknown : BuddyIntent
 }

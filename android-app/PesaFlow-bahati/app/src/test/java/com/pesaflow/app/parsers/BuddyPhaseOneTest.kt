@@ -267,6 +267,46 @@ class BuddyPhaseOneTest {
         assertEquals(2, allCmd.txIds.size)
     }
 
+    private fun lastMonthTs(): Long {
+        return java.util.Calendar.getInstance().apply {
+            add(java.util.Calendar.MONTH, -1)
+            set(java.util.Calendar.DAY_OF_MONTH, 15)
+        }.timeInMillis
+    }
+
+    @Test
+    fun `bought phrase routes to purchase log with month window`() {
+        val intent = BuddyIntentRouter.route("i bought some shoes at 2800 last month").intent
+        assertTrue(intent is BuddyIntent.LogPurchase)
+        val log = intent as BuddyIntent.LogPurchase
+        assertEquals(2800.0, log.amount, 0.01)
+        assertEquals(1, log.monthOffset)
+        assertTrue(log.item.contains("shoes", ignoreCase = true))
+    }
+
+    @Test
+    fun `purchase log single match proposes filing under inferred category`() {
+        val rows = ledger() + ledgerTx("t5", "SHOES PALACE", 2800.0, "Other", lastMonthTs())
+        val outcome = BuddyPhaseOne.handle("i bought some shoes at 2800 last month", state(), rows, merchants() + "SHOES PALACE")
+        assertTrue(outcome is BuddyOutcome.ProposeCommand)
+        val cmd = (outcome as BuddyOutcome.ProposeCommand).command
+        assertTrue(cmd is com.pesaflow.app.ui.buddy.BuddyCommand.ReclassifyTransaction)
+        val re = cmd as com.pesaflow.app.ui.buddy.BuddyCommand.ReclassifyTransaction
+        assertEquals(listOf("t5"), re.txIds)
+        assertTrue(re.category.isNotBlank())
+    }
+
+    @Test
+    fun `purchase log miss offers a backdated add`() {
+        val outcome = BuddyPhaseOne.handle("i bought some shoes at 2800 last month", state(), ledger(), merchants())
+        assertTrue(outcome is BuddyOutcome.ProposeCommand)
+        val cmd = (outcome as BuddyOutcome.ProposeCommand).command
+        assertTrue(cmd is com.pesaflow.app.ui.buddy.BuddyCommand.AddTransaction)
+        val add = cmd as com.pesaflow.app.ui.buddy.BuddyCommand.AddTransaction
+        assertEquals(2800.0, add.amount, 0.01)
+        assertNotNull(add.dateTimestamp)
+    }
+
     @Test
     fun `delete proposes with history warning`() {
         val outcome = BuddyPhaseOne.handle("delete the Naivas transaction", state(), ledger(), merchants())

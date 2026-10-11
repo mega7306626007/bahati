@@ -73,7 +73,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
     var step by rememberSaveable {
         mutableStateOf(
             if (bootPrefs.getInt("onboarding_flow_version", 0) >= 2) {
-                bootPrefs.getInt("onboarding_step", 0).coerceIn(0, 5)
+                bootPrefs.getInt("onboarding_step", 0).coerceIn(0, 6)
             } else {
                 when (bootPrefs.getInt("onboarding_step", 0).coerceIn(0, 4)) {
                     0 -> 0
@@ -87,6 +87,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
     }
     // Celebration beats the handoff: seeded → check + stars → home.
     var celebrate by rememberSaveable { mutableStateOf(false) }
+    var holdOn by rememberSaveable { mutableStateOf(false) }
     var welcomed by rememberSaveable { mutableStateOf(bootPrefs.getBoolean("onboarding_welcomed", false)) }
     var showDemoConfirmation by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(step, welcomed) {
@@ -640,7 +641,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = { (step + 1) / 6f },
+                progress = { (step + 1) / 7f },
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
@@ -652,7 +653,8 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                     2 -> "Step 3 of 6 · Auto-tracking"
                     3 -> "Step 4 of 6 · Semester money"
                     4 -> "Step 5 of 6 · Tell us about you"
-                    else -> "Step 6 of 6 · Review & start"
+                    5 -> "Step 6 of 7 · Review & start"
+                    else -> "Step 7 of 7 · Hold on"
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1326,7 +1328,8 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             "1. Open the M-Pesa app \u2192 Statements.\n"
                                 + "2. Pick a period (last 3 months is plenty).\n"
                                 + "3. Send it to your own email, then download the CSV or PDF here.\n"
-                                + "4. PDF password is usually the ID or document number you entered when requesting it.",
+                                + "4. PDF password is usually the ID or document number you entered when requesting it.\n"
+                                + "5. No smartphone or app? Dial *334#, choose Statements, and have it sent to your email - then download it here the same way. Confirm the steps on your line, menus shift by region.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1605,6 +1608,14 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             ReviewRow("Food budget", revFood?.first?.let { "KSh " + it.toInt() } ?: "—", revFood?.second ?: "skip")
                             ReviewRow("Rent", revRent?.first?.let { "KSh " + it.toInt() } ?: "—", revRent?.second ?: "skip")
                             ReviewRow("Transport", revTransport?.first?.let { "KSh " + it.toInt() } ?: "—", revTransport?.second ?: "skip")
+                            val campusHabit = com.pesaflow.app.data.campus.campusHabitsFor(campus.ifBlank { university })
+                            val yearHabit = com.pesaflow.app.data.campus.yearHabitFor(yearOfStudy)
+                            ReviewRow(
+                                "Campus",
+                                campusHabit?.let { it.campus + " — " + it.residence } ?: (campus.ifBlank { university }.ifBlank { "—" }),
+                                if (campusHabit != null) "researched" else "skip"
+                            )
+                            ReviewRow("Year " + yearOfStudy.ifBlank { "?" }, yearHabit.topTip, "personalized")
                             ReviewRow("Airtime", revAirtime?.first?.let { "KSh " + it.toInt() } ?: "—", revAirtime?.second ?: "skip")
                             ReviewRow("Cash on hand → ledger", revCash?.let { "KSh " + it.toInt() } ?: "—", if (revCash != null) "you" else "skip")
                             ReviewRow("M-Pesa held → ledger", revMpesa?.let { "KSh " + it.toInt() } ?: "—", if (revMpesa != null) "you" else "skip")
@@ -2051,7 +2062,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             // entirely. The jokes need one rotation.
                             val waited = System.currentTimeMillis() - finishStart
                             if (waited < 2400) kotlinx.coroutines.delay(2400 - waited)
-                            celebrate = true
+                            holdOn = true
                         } catch (e: Exception) {
                             android.widget.Toast.makeText(appContext, "Setup hit a snag - nothing was lost. Tap Start again.", android.widget.Toast.LENGTH_LONG).show()
                         } finally {
@@ -2072,7 +2083,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
     // bar, and rotating app jokes behind it. Back is locked, failure
     // toasts and releases - the user never stares at a dead screen
     // while the ledger saves underneath.
-    if (finishing) {
+    if (holdOn) {
         val finishJokes = remember {
             listOf(
                 "Teaching matatus to file themselves...",
@@ -2103,6 +2114,12 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text("Hold on - setting up your money", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = { holdOn = false; celebrate = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) { Text("Continue", fontWeight = FontWeight.Bold) }
                     com.pesaflow.app.ui.theme.PpProgress(fraction = finishProgress)
                     Text(finishStage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(

@@ -91,6 +91,12 @@ object BuddyCapabilities {
             needsConfirmation = true, domain = "ledger"
         ),
         BuddyCapability(
+            "txn.log_purchase", "File a purchase",
+            "Finds what you bought in the ledger, confirms it is yours, then files it. Misses offer a backdated add.",
+            BuddyIntent.LogPurchase("", 0.0, null), BuddyRiskClass.FINANCIAL_MUTATION,
+            needsConfirmation = true, domain = "ledger"
+        ),
+        BuddyCapability(
             "txn.delete", "Delete transactions",
             "Undoable ledger delete behind a confirm card. Never bulk.",
             BuddyIntent.Delete(null, null), BuddyRiskClass.DESTRUCTIVE,
@@ -249,6 +255,7 @@ object BuddyCapabilities {
         is BuddyIntent.AddTransaction -> all.first { it.id == "txn.add" }
         is BuddyIntent.FindTransactions -> all.first { it.id == "txn.find" }
         is BuddyIntent.Reclassify -> all.first { it.id == "txn.reclassify" }
+        is BuddyIntent.LogPurchase -> all.first { it.id == "txn.log_purchase" }
         is BuddyIntent.Delete -> all.first { it.id == "txn.delete" }
         is BuddyIntent.ResolvedReclassify -> all.first { it.id == "txn.reclassify" }
         is BuddyIntent.ResolvedDelete -> all.first { it.id == "txn.delete" }

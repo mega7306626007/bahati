@@ -291,21 +291,21 @@ fun PpProgress(
     }
     // Barber-pole stripes: dark slashes over the fill, clipped to the
     // rounded bar — a filling bar reads as working at a glance.
-    // Barber-pole stripes drift BACKWARDS while a bar is filling: motion
-    // against the fill direction catches the eye and pulls it forward.
-    // Full and empty bars sit still - nothing left to entice.
-    val drift = remember { androidx.compose.animation.core.Animatable(0f) }
+    // Shimmer sweep: a soft light band glides across the fill while it
+    // grows - the bar looks alive and worth watching. Full and empty
+    // bars sit still - nothing left to entice.
+    val sweep = remember { androidx.compose.animation.core.Animatable(0f) }
     androidx.compose.runtime.LaunchedEffect(striped, fraction) {
         if (striped && fraction > 0f && fraction < 1f) {
             while (true) {
-                drift.animateTo(
-                    -1f,
+                sweep.animateTo(
+                    1f,
                     animationSpec = androidx.compose.animation.core.tween(1100, easing = androidx.compose.animation.core.LinearEasing)
                 )
-                drift.snapTo(0f)
+                sweep.snapTo(0f)
             }
         } else {
-            drift.snapTo(0f)
+            sweep.snapTo(0f)
         }
     }
     Canvas(
@@ -318,7 +318,8 @@ fun PpProgress(
         val w = size.width * animated
         if (w <= 0f) return@Canvas
         val stripe = 7.dp.toPx()
-        val phase = drift.value * stripe * 2f
+        val bandW = 56.dp.toPx()
+        val bandX = sweep.value * (w + bandW) - bandW
         clipPath(
             Path().apply {
                 addRoundRect(RoundRect(Rect(Offset.Zero, size), CornerRadius(size.height / 2)))
@@ -326,8 +327,8 @@ fun PpProgress(
         ) {
             drawRect(color = color, topLeft = Offset.Zero, size = Size(w, size.height))
             if (striped) {
-                val dark = Color.Black.copy(alpha = 0.22f)
-                var x = -size.height + phase
+                val dark = Color.Black.copy(alpha = 0.12f)
+                var x = -size.height
                 while (x < w + size.height) {
                     drawLine(
                         color = dark,
@@ -337,6 +338,14 @@ fun PpProgress(
                         cap = StrokeCap.Butt
                     )
                     x += stripe * 2f
+                }
+                if (fraction > 0f && fraction < 1f) {
+                    drawRoundRect(
+                        color = Color.White.copy(alpha = 0.35f),
+                        topLeft = Offset(bandX, 0f),
+                        size = Size(bandW.coerceAtMost(w), size.height),
+                        cornerRadius = CornerRadius(size.height / 2)
+                    )
                 }
             }
         }

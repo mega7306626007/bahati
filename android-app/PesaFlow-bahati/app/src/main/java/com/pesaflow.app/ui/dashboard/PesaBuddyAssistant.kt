@@ -965,6 +965,24 @@ fun processUserInput(
         q.contains("what if") || q.contains("simulate") || q.contains("scenario") || q.contains("suppose") || q.contains("imagine") ->
             com.pesaflow.app.ui.buddy.BuddyStrings.scenarioMenu(cardLang)
 
+        (q.contains("campus") || q.contains("chuoni") || q.contains("tips for year") || q.contains("freshman") || q.contains("mwaka wa")) && (q.contains("food") || q.contains("eat") || q.contains("kula") || q.contains("tips") || q.contains("guide") || q.contains("mwongozo")) ->
+            run {
+                val profile = viewModel.universityProfile.value
+                val habit = com.pesaflow.app.data.campus.campusHabitsFor(
+                    listOf(profile?.campus.orEmpty(), profile?.universityName.orEmpty()).firstOrNull { it.isNotBlank() }.orEmpty()
+                )
+                if (habit != null) com.pesaflow.app.ui.buddy.BuddyStrings.campusTips(habit.campus, habit.residence, habit.food, habit.commute, cardLang)
+                else com.pesaflow.app.ui.buddy.BuddyStrings.helpFallback(cardLang)
+            }
+
+        q.contains("year") && (q.contains("tip") || q.contains("advice") || q.contains("habit") || q.contains("mwaka")) ->
+            run {
+                val yearRaw = viewModel.universityProfile.value?.yearOfStudy.orEmpty()
+                val yh = com.pesaflow.app.data.campus.yearHabitFor(yearRaw)
+                val label = if (yh.year > 0) yh.year.toString() else yearRaw.ifBlank { "?" }
+                com.pesaflow.app.ui.buddy.BuddyStrings.yearTips(label, yh.pattern, yh.watch, yh.topTip, cardLang)
+            }
+
         q.contains("today") || q.contains("leo") ->
             if (txs.isEmpty()) com.pesaflow.app.ui.buddy.BuddyStrings.todayEmpty(cardLang)
             else com.pesaflow.app.ui.buddy.BuddyStrings.todaySpend(todaySpend.toInt().toString(), monthExpense.toInt().toString(), cardLang)
