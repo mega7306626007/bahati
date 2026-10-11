@@ -173,15 +173,19 @@ fun PesaBuddyAssistant(
                 .padding(horizontal = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Chat Messages Area
-            AtmosphereBand(
-                workspace = AtmoWorkspace.BUDDY,
-                title = "Ask anything",
-                subtitle = "Answers from your data",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-            )
+            // Chat Messages Area: the intro banner only owns the screen
+            // before the first message — after that every pixel belongs
+            // to the conversation.
+            if (messages.value.isEmpty()) {
+                AtmosphereBand(
+                    workspace = AtmoWorkspace.BUDDY,
+                    title = "Ask anything",
+                    subtitle = "Answers from your data",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                )
+            }
             ScrollableChatArea(
                 messages = messages.value,
                 modifier = Modifier.weight(1f),
@@ -319,14 +323,18 @@ fun ChatMessageBubble(
         horizontalArrangement = if (message.isUser) Arrangement.End else Arrangement.Start
     ) {
         Surface(
-            color = if (message.isUser) MaterialTheme.colorScheme.primary else skinCardColor(SkinBuddy),
+            // Solid surfaces, capped width: assistant answers stay readable
+            // over the cinematic backdrop instead of fighting it, and narrow
+            // bubbles scan faster than full-width walls of text.
+            color = if (message.isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
             shape = RoundedCornerShape(
                 topStart = if (message.isUser) 16.dp else 4.dp,
                 topEnd = if (message.isUser) 4.dp else 16.dp,
                 bottomStart = 16.dp,
                 bottomEnd = 16.dp
             ),
-            shadowElevation = 1.dp
+            shadowElevation = 1.dp,
+            modifier = Modifier.widthIn(max = 320.dp)
         ) {
             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                 Text(
