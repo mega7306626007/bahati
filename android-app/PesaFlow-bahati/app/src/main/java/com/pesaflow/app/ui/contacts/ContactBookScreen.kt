@@ -227,10 +227,6 @@ private fun ContactRow(
     onDelete: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val myTxns = remember(entry, transactions) {
-        transactions.filter { com.pesaflow.app.data.ledger.ContactBook.matchesContact(it.merchant, entry) }
-            .sortedByDescending { it.dateTimestamp }
-    }
     val members = remember(entry) {
         com.pesaflow.app.data.ledger.splitUserList(entry.matchTerms)
     }
@@ -271,6 +267,12 @@ private fun ContactRow(
             }
         }
         if (expanded) {
+            // Lazy: the regex sweep over the ledger runs only for the
+            // opened card, not for every row on every recomposition.
+            val myTxns = remember(entry, transactions) {
+                transactions.filter { com.pesaflow.app.data.ledger.ContactBook.matchesContact(it.merchant, entry) }
+                    .sortedByDescending { it.dateTimestamp }
+            }
             Spacer(modifier = Modifier.height(8.dp))
             if (members.isNotEmpty()) {
                 Text(
@@ -320,17 +322,22 @@ private fun ContactRow(
 @Composable
 private fun MemberRow(term: String, transactions: List<com.pesaflow.app.data.models.Transaction>) {
     var open by remember { mutableStateOf(false) }
-    val termTxns = remember(term, transactions) {
-        transactions.filter { com.pesaflow.app.data.ledger.ContactBook.matchesContact(it.merchant, term) }
-            .sortedByDescending { it.dateTimestamp }
-    }
     Column(modifier = Modifier.fillMaxWidth().padding(start = 8.dp, top = 2.dp)) {
         TextButton(onClick = { open = !open }) {
-            Text((if (open) "- " else "+ ") + term + " (" + termTxns.size + ")", style = MaterialTheme.typography.bodySmall)
+            Text((if (open) "- " else "+ ") + term, style = MaterialTheme.typography.bodySmall)
         }
         if (open) {
+            val termTxns = remember(term, transactions) {
+                transactions.filter { com.pesaflow.app.data.ledger.ContactBook.matchesContact(it.merchant, term) }
+                    .sortedByDescending { it.dateTimestamp }
+            }
+            Text(
+                "Messages (" + termTxns.size + "):",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold
+            )
             if (termTxns.isEmpty()) {
-                Text("No messages yet.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("None yet.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             termTxns.take(10).forEach { tx ->
                 Text(

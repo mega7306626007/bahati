@@ -1751,6 +1751,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             finishStage = "Starting"
                             scanScope.launch {
                             try {
+                            val finishStart = System.currentTimeMillis()
                             val now = System.currentTimeMillis()
                             viewModel.setUserName(name)
                             viewModel.setNickname(nickname)
@@ -2045,6 +2046,11 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             finishProgress = 1f
                             finishStage = "Done"
                             kotlinx.coroutines.yield()
+                            // Guaranteed hold: fast ledgers finish in
+                            // milliseconds, which used to skip the screen
+                            // entirely. The jokes need one rotation.
+                            val waited = System.currentTimeMillis() - finishStart
+                            if (waited < 2400) kotlinx.coroutines.delay(2400 - waited)
                             celebrate = true
                         } catch (e: Exception) {
                             android.widget.Toast.makeText(appContext, "Setup hit a snag - nothing was lost. Tap Start again.", android.widget.Toast.LENGTH_LONG).show()
