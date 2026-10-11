@@ -331,13 +331,14 @@ private fun MemberRow(term: String, transactions: List<com.pesaflow.app.data.mod
                 transactions.filter { com.pesaflow.app.data.ledger.ContactBook.matchesContact(it.merchant, term) }
                     .sortedByDescending { it.dateTimestamp }
             }
-            Text(
-                "Messages (" + termTxns.size + "):",
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Bold
-            )
             if (termTxns.isEmpty()) {
                 Text("None yet.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                Text(
+                    "Messages (" + termTxns.size + "):",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold
+                )
             }
             termTxns.take(10).forEach { tx ->
                 Text(

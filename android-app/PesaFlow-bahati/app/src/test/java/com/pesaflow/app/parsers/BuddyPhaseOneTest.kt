@@ -297,6 +297,12 @@ class BuddyPhaseOneTest {
     }
 
     @Test
+    fun `simulated purchases stay simulations`() {
+        val intent = BuddyIntentRouter.route("simulate buying shoes at 2800").intent
+        assertTrue(intent is BuddyIntent.SimulatePurchase)
+    }
+
+    @Test
     fun `purchase log miss offers a backdated add`() {
         val outcome = BuddyPhaseOne.handle("i bought some shoes at 2800 last month", state(), ledger(), merchants())
         assertTrue(outcome is BuddyOutcome.ProposeCommand)

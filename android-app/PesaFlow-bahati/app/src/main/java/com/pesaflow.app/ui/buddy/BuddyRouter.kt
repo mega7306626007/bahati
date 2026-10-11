@@ -183,6 +183,7 @@ object BuddyIntentRouter {
     // already left, so this searches the ledger instead of drafting a new
     // row. Amount is mandatory - without it there is nothing to match.
     private fun routeLogPurchase(normalized: String, entities: BuddyEntities): RoutedCommand? {
+        if (SIM_VERBS.any(normalized::contains)) return null
         if (!hasVerb(normalized, *BOUGHT_VERBS.toTypedArray())) return null
         val amount = entities.amount ?: return null
         val item = merchantRemainder(normalized, amount, entities.category)?.takeIf { it.isNotBlank() } ?: return null

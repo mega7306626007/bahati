@@ -73,7 +73,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
     var step by rememberSaveable {
         mutableStateOf(
             if (bootPrefs.getInt("onboarding_flow_version", 0) >= 2) {
-                bootPrefs.getInt("onboarding_step", 0).coerceIn(0, 6)
+                bootPrefs.getInt("onboarding_step", 0).coerceIn(0, 5)
             } else {
                 when (bootPrefs.getInt("onboarding_step", 0).coerceIn(0, 4)) {
                     0 -> 0
@@ -641,7 +641,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = { (step + 1) / 7f },
+                progress = { (step + 1) / 6f },
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
@@ -653,8 +653,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                     2 -> "Step 3 of 6 · Auto-tracking"
                     3 -> "Step 4 of 6 · Semester money"
                     4 -> "Step 5 of 6 · Tell us about you"
-                    5 -> "Step 6 of 7 · Review & start"
-                    else -> "Step 7 of 7 · Hold on"
+                    else -> "Step 6 of 6 · Review & start"
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1744,7 +1743,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
             }
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = { if (!finishing && step > 0) step-- }, enabled = step > 0 && !finishing) { Text("Back") }
+                TextButton(onClick = { if (!finishing && !holdOn && step > 0) step-- }, enabled = step > 0 && !finishing && !holdOn) { Text("Back") }
                 Button(
                     onClick = {
                         if (step == 5 && semesterStartMillis > 0L && endMillis > 0L && endMillis <= semesterStartMillis) {
@@ -1756,7 +1755,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             android.widget.Toast.makeText(appContext, "Tell us your name and university to continue — the rest is optional.", android.widget.Toast.LENGTH_LONG).show()
                         } else if (step < 5) {
                             step++
-                        } else if (!finishing) {
+                        } else if (!finishing && !holdOn) {
                             finishing = true
                             finishProgress = 0.05f
                             finishStage = "Starting"
@@ -2101,7 +2100,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
             }
         }
         Box(
-            Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)),
+            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
             contentAlignment = Alignment.Center
         ) {
             Card(
@@ -2114,12 +2113,6 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text("Hold on - setting up your money", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = { holdOn = false; celebrate = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) { Text("Continue", fontWeight = FontWeight.Bold) }
                     com.pesaflow.app.ui.theme.PpProgress(fraction = finishProgress)
                     Text(finishStage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
@@ -2127,6 +2120,12 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = { holdOn = false; celebrate = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) { Text("Continue", fontWeight = FontWeight.Bold) }
                 }
             }
         }
