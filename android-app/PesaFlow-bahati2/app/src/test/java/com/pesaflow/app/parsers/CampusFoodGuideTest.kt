@@ -1,0 +1,125 @@
+package com.pesaflow.app.parsers
+
+import com.pesaflow.app.data.meals.MealTier
+import com.pesaflow.app.data.meals.mealTier
+import com.pesaflow.app.data.meals.mealTierLabel
+import com.pesaflow.app.data.meals.rentHintFor
+import com.pesaflow.app.data.meals.spotsFor
+import org.junit.Assert.*
+import org.junit.Test
+
+
+class CampusFoodGuideTest {
+
+    @Test
+    fun `uon main resolves to uon pack with researched klabu prices`() {
+        val spots = spotsFor("UoN Main")
+        assertTrue(spots.isNotEmpty())
+        assertTrue(spots.all { it.university == "UoN" })
+        val smocha = spots.firstOrNull { it.item == "Smocha" && it.verified }
+        assertNotNull(smocha)
+        // Klabu student price list (Oct 2026) corrected the old 70 estimate.
+        assertEquals(50.0, smocha!!.price, 0.001)
+        assertTrue(smocha.spot.isNotBlank())
+    }
+
+    @Test
+    fun `kabete and chiromo resolve to uon pack`() {
+        listOf("Kabete", "Lower Kabete", "Chiromo", "UoN Kabete Campus").forEach { q ->
+            val spots = spotsFor(q)
+            assertTrue(q, spots.isNotEmpty())
+            assertTrue(spots.all { it.university == "UoN" })
+        }
+    }
+
+    @Test
+    fun `kenyatta resolves to ku before nairobi rule`() {
+        val spots = spotsFor("Kenyatta University")
+        assertTrue(spots.isNotEmpty())
+        assertTrue(spots.all { it.university == "KU" })
+    }
+
+    @Test
+    fun `jkuat maseno egerton resolve`() {
+        assertTrue(spotsFor("JKUAT Juja").all { it.university == "JKUAT" })
+        assertTrue(spotsFor("JKUAT Juja").isNotEmpty())
+        assertTrue(spotsFor("Maseno").all { it.university == "Maseno" })
+        assertTrue(spotsFor("Egerton Njoro").all { it.university == "Egerton" })
+    }
+
+    @Test
+    fun `unknown or blank school yields no pack`() {
+        assertTrue(spotsFor("Oxford").isEmpty())
+        assertTrue(spotsFor("").isEmpty())
+        assertTrue(spotsFor("   ").isEmpty())
+    }
+
+    @Test
+    fun `every spot has a priced plate and meal type`() {
+        listOf("UoN", "KU", "JKUAT", "Maseno", "Egerton").forEach { uni ->
+            val spots = spotsFor(uni)
+            assertTrue(spots.isNotEmpty())
+            spots.forEach {
+                assertTrue(it.item.isNotBlank())
+                assertTrue(it.price > 0)
+                assertTrue(it.mealType in setOf("Breakfast", "Lunch", "Supper", "Snack"))
+            }
+        }
+    }
+
+    @Test
+    fun `coverage is extensive across the country`() {
+        val unis = listOf(
+            "Moi Eldoret", "Masinde Muliro Kakamega", "Kisii University",
+            "Strathmore Madaraka", "Daystar Athi River", "USIU Kasarani",
+            "Catholic Karen", "TUK Ngara", "Kabarak Nakuru", "MKU Thika",
+            "Dedan Kimathi Nyeri", "Meru University", "Embu", "Chuka",
+            "Laikipia Nyahururu", "Maasai Mara Narok", "Pwani Kilifi",
+            "Kibabii Bungoma", "Machakos University", "Garissa", "Rongo",
+            "KCA Roysambu", "Multimedia Rongai", "Zetech Ruiru",
+            "Karatina", "Muranga", "Taita Taveta Voi", "TUM Mombasa"
+        )
+        unis.forEach { assertTrue("$it should resolve", spotsFor(it).isNotEmpty()) }
+        assertTrue(spotsFor("Oxford").isEmpty())
+    }
+
+    @Test
+    fun `researched mess prices land verbatim`() {
+        val ku = spotsFor("Kenyatta")
+        assertEquals(15.0, ku.first { it.item == "Chapati" }.price, 0.001)
+        assertEquals(10.0, ku.first { it.item == "Sukuma wiki" }.price, 0.001)
+        assertEquals(100.0, ku.first { it.item == "Chicken & fries" }.price, 0.001)
+        val maseno = spotsFor("Maseno")
+        assertEquals(30.0, maseno.first { it.item == "Student Special" }.price, 0.001)
+        assertEquals(110.0, maseno.first { it.item == "Ugali + sukuma + eggs/omena" }.price, 0.001)
+        val uon = spotsFor("UoN")
+        assertEquals(50.0, uon.first { it.item == "Smocha" }.price, 0.001)
+        assertEquals(100.0, uon.first { it.item == "Beef ugali" }.price, 0.001)
+    }
+
+    @Test
+    fun `rent hints carry researched bands`() {
+        val ku = rentHintFor("Kenyatta University")
+        assertNotNull(ku)
+        assertTrue(ku!!.contains("5-8k"))
+        val maseno = rentHintFor("Maseno")
+        assertNotNull(maseno)
+        assertTrue(maseno!!.contains("3k"))
+        val strath = rentHintFor("Strathmore")
+        assertNotNull(strath)
+        assertTrue(strath!!.contains("13-50k"))
+        assertNull(rentHintFor("Oxford"))
+        assertNull(rentHintFor(""))
+    }
+
+    @Test
+    fun `daily allowance maps to comfort balanced stretch tiers`() {
+        assertEquals(MealTier.COMFORT, mealTier(500.0))
+        assertEquals(MealTier.COMFORT, mealTier(400.0))
+        assertEquals(MealTier.BALANCED, mealTier(399.0))
+        assertEquals(MealTier.BALANCED, mealTier(150.0))
+        assertEquals(MealTier.STRETCH, mealTier(149.0))
+        assertEquals(MealTier.STRETCH, mealTier(0.0))
+        assertTrue(mealTierLabel(MealTier.STRETCH).isNotBlank())
+    }
+}

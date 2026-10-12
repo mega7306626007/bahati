@@ -1,0 +1,17 @@
+<resources>
+    <!-- Day splash: papayawhip window so launch never flashes white. -->
+    <style name="Theme.PesaFlow" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">#FFFFEFD5</item>
+        <item name="android:windowBackground">#FFFFEFD5</item>
+        <item name="android:navigationBarColor">#FFFFF8EC</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!-- Branded launch: deep navy + app icon, then hands off to Theme.PesaFlow. -->
+    <style name="Theme.PesaFlow.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/pesaplanner_icon_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="windowSplashScreenAnimationDuration">800</item>
+        <item name="postSplashScreenTheme">@style/Theme.PesaFlow</item>
+    </style>
+</resources>

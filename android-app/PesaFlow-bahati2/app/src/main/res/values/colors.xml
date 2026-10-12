@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="pesaplanner_icon_background">#031861</color>
+    <!-- Home widget palette (must be resources — Glance reads them remotely). -->
+    <color name="widget_gold">#D4AF37</color>
+    <color name="widget_white">#FFFFFF</color>
+    <color name="widget_mist">#A9B4D4</color>
+</resources>

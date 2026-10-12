@@ -1,0 +1,34 @@
+# Gradle / Android build outputs
+.gradle/
+build/
+*/build/
+captures/
+
+# Local config (SDK path, machine-specific)
+local.properties
+
+# Signing secrets — never commit
+*.jks
+*.keystore
+*.p12
+*.key
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Built artifacts (attach to GitHub Releases instead)
+*.apk
+*.aab
+*.ap_
+app/release/
+
+# Tool session files
+.artifacts/
+
+# JVM heap dumps (Gradle daemon crashes)
+*.hprof
