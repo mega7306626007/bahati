@@ -43,6 +43,12 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun getById(id: String): Transaction?
 
+    // Bounded page for one-shot bulk reads. Background workers must use
+    // readAllChunked below: a single unbounded SELECT * cursor overflows
+    // CursorWindow once the ledger passes ~1k rows (row 1006 crash).
+    @Query("SELECT * FROM transactions ORDER BY dateTimestamp DESC LIMIT :limit OFFSET :offset")
+    suspend fun getTransactionsPage(limit: Int, offset: Int): List<Transaction>
+
 
     // One-shot read for use inside write transactions — collecting the Flow
     // query above from within a transact{} block pins a read snapshot on a
@@ -128,4 +134,20 @@ interface TransactionDao {
 
     @Query("SELECT * FROM transactions WHERE (amount >= :minAmount AND amount <= :maxAmount) AND (merchant LIKE '%' || :searchTerm || '%' OR category LIKE '%' || :searchTerm || '%')")
     fun searchTransactions(minAmount: Double, maxAmount: Double, searchTerm: String): Flow<List<Transaction>>
+}
+
+// Full-ledger read without a giant cursor: same rows as
+// getAllTransactions().first(), fetched in 500-row pages. Memory profile
+// is unchanged (callers already held the whole list); only the cursor
+// stays small. UI Flow feeds are untouched.
+suspend fun TransactionDao.readAllChunked(pageSize: Int = 500): List<Transaction> {
+    val out = ArrayList<Transaction>(1024)
+    var offset = 0
+    while (true) {
+        val page = getTransactionsPage(pageSize, offset)
+        out.addAll(page)
+        if (page.size < pageSize) break
+        offset += pageSize
+    }
+    return out
 }

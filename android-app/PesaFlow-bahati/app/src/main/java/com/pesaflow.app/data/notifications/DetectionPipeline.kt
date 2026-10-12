@@ -23,6 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.pesaflow.app.data.database.readAllChunked
 
 
 // Single pipeline every detector (SMS receiver, notification listener, inbox
@@ -175,7 +176,7 @@ class PendingApproveReceiver : BroadcastReceiver() {
                 } else {
                     // Codeless rows (e.g. bundles) can't be looked up by code —
                     // match the ledger on amount + merchant + day instead.
-                    database.transactionDao().getAllTransactions().first().any {
+                    database.transactionDao().readAllChunked().any {
                         it.amount == pending.amount && it.merchant == pending.merchant &&
                             kotlin.math.abs(it.dateTimestamp - pending.dateTimestamp) < 24L * 60 * 60 * 1000
                     }

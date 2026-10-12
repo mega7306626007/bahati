@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import com.pesaflow.app.data.database.readAllChunked
 
 
 class FinanceRepository(private val database: AppDatabase) {
@@ -531,7 +532,7 @@ class FinanceRepository(private val database: AppDatabase) {
                     retaught[p.merchant] = cat
                     pendingFixed++
                 }
-            database.transactionDao().getAllTransactions().first()
+            database.transactionDao().readAllChunked()
                 .filter { it.type == TransactionType.SAVING && needsFix(it.merchant, it.merchant + " " + it.description) }
                 .forEach { t ->
                     val cat = com.pesaflow.app.data.parsers.MpesaParser.inferCategory(t.merchant, TransactionType.EXPENSE, t.description)

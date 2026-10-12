@@ -161,6 +161,7 @@ fun ExportScreen(
                     }
                     val pdfContext = androidx.compose.ui.platform.LocalContext.current
                     Button(onClick = {
+                        try {
                         val rs = rangeStart ?: Long.MIN_VALUE
                         val re = rangeEnd ?: Long.MAX_VALUE
                         val report = com.pesaflow.app.data.exports.statementReportModel(
@@ -173,6 +174,7 @@ fun ExportScreen(
 // create phantom subdirectories and crash with ENOENT.
 val safeStamp = report.generatedLabel.replace(Regex("[^A-Za-z0-9]+"), "-").trim('-').takeIf { it.isNotBlank() } ?: "report"
 val file = java.io.File(pdfContext.cacheDir, "pesaflow-statement-$safeStamp.pdf")
+                        file.parentFile?.mkdirs()
                         file.outputStream().use { doc.writeTo(it) }
                         doc.close()
                         val uri = androidx.core.content.FileProvider.getUriForFile(
@@ -184,6 +186,9 @@ val file = java.io.File(pdfContext.cacheDir, "pesaflow-statement-$safeStamp.pdf"
                             addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
                         pdfContext.startActivity(android.content.Intent.createChooser(share, "Share PDF statement"))
+                        } catch (e: Exception) {
+                            android.widget.Toast.makeText(pdfContext, "PDF failed: ${e.message ?: "storage error"} - nothing was lost.", android.widget.Toast.LENGTH_LONG).show()
+                        }
                     }) { Text("Generate PDF Statement ($pdfRange)") }
                 }
             }

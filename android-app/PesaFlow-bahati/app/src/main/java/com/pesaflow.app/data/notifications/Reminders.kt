@@ -34,6 +34,7 @@ import com.pesaflow.app.ui.language.notifTitle
 import kotlinx.coroutines.flow.first
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
+import com.pesaflow.app.data.database.readAllChunked
 
 
 object NotificationHelper {
@@ -364,7 +365,7 @@ class DailySummaryWorker(appContext: Context, params: WorkerParameters) : Corout
             ctx.getSharedPreferences("pesaflow_prefs", Context.MODE_PRIVATE).edit().putLong("last_run", System.currentTimeMillis()).apply()
             val lang = langOf(ctx.getSharedPreferences("pesaflow_prefs", Context.MODE_PRIVATE).getString("app_language", "MIXED") ?: "MIXED")
             val db = AppDatabase.getDatabase(ctx)
-            val txs = db.transactionDao().getAllTransactions().first()
+            val txs = db.transactionDao().readAllChunked()
             val now = System.currentTimeMillis()
 
             fun isExpense(t: com.pesaflow.app.data.models.Transaction) = t.type == TransactionType.EXPENSE && !t.isSample
@@ -714,7 +715,7 @@ class SundayReportWorker(appContext: Context, params: WorkerParameters) : Corout
             val ctx = applicationContext
             val lang = langOf(ctx.getSharedPreferences("pesaflow_prefs", Context.MODE_PRIVATE).getString("app_language", "MIXED") ?: "MIXED")
             val db = AppDatabase.getDatabase(ctx)
-            val txs = db.transactionDao().getAllTransactions().first()
+            val txs = db.transactionDao().readAllChunked()
             val now = System.currentTimeMillis()
             // Calendar weeks (Mon-start), never mid-day rolling windows: the old
             // now - 7d boundary sliced the same local date across both weeks.
@@ -796,7 +797,7 @@ class BudgetCrossingWorker(appContext: Context, params: WorkerParameters) : Coro
         return try {
             val ctx = applicationContext
             val db = AppDatabase.getDatabase(ctx)
-            val txs = db.transactionDao().getAllTransactions().first()
+            val txs = db.transactionDao().readAllChunked()
             val budgets = db.budgetDao().getAllBudgets().first()
             val now = System.currentTimeMillis()
             val all = budgets.firstOrNull { it.category == "ALL" }
@@ -837,7 +838,7 @@ class DailyDigestWorker(appContext: Context, params: WorkerParameters) : Corouti
         return try {
             val ctx = applicationContext
             val db = AppDatabase.getDatabase(ctx)
-            val txs = db.transactionDao().getAllTransactions().first()
+            val txs = db.transactionDao().readAllChunked()
             val now = System.currentTimeMillis()
             val yesterday = yesterdayRange(now)
             val yesterdaySpent = txs.filter { it.type == TransactionType.EXPENSE && it.dateTimestamp in yesterday }.sumOf { it.amount }
@@ -910,7 +911,7 @@ class NightReportWorker(appContext: Context, params: WorkerParameters) : Corouti
             val ctx = applicationContext
             val lang = langOf(ctx.getSharedPreferences("pesaflow_prefs", Context.MODE_PRIVATE).getString("app_language", "MIXED") ?: "MIXED")
             val db = AppDatabase.getDatabase(ctx)
-            val txs = db.transactionDao().getAllTransactions().first()
+            val txs = db.transactionDao().readAllChunked()
             val now = System.currentTimeMillis()
             val day = 24L * 60 * 60 * 1000
             val today = todayRange(now)
@@ -1113,7 +1114,7 @@ class MonthlyReportWorker(appContext: Context, params: WorkerParameters) : Corou
             val ctx = applicationContext
             val lang = langOf(ctx.getSharedPreferences("pesaflow_prefs", Context.MODE_PRIVATE).getString("app_language", "MIXED") ?: "MIXED")
             val db = AppDatabase.getDatabase(ctx)
-            val txs = db.transactionDao().getAllTransactions().first()
+            val txs = db.transactionDao().readAllChunked()
             val now = System.currentTimeMillis()
             val monthStart = java.util.Calendar.getInstance().apply {
                 timeInMillis = now

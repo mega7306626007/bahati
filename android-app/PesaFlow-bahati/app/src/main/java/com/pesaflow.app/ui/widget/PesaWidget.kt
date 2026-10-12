@@ -33,6 +33,7 @@ import com.pesaflow.app.data.models.PaymentMethod
 import com.pesaflow.app.data.models.TransactionType
 import java.util.Calendar
 import kotlinx.coroutines.flow.first
+import com.pesaflow.app.data.database.readAllChunked
 
 
 /** Home-screen widget: safe-to-spend + today's out-go, tap to open.
@@ -42,7 +43,7 @@ class PesaWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val txs = try {
-            AppDatabase.getDatabase(context).transactionDao().getAllTransactions().first()
+            AppDatabase.getDatabase(context).transactionDao().readAllChunked()
         } catch (e: Exception) {
             emptyList()
         }
