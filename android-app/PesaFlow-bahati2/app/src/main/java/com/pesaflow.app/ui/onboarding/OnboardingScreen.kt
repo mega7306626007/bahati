@@ -7,6 +7,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -2082,10 +2083,10 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
         }
     }
 
-    // Hold-on screen: progress that scales with real phases, a striped
-    // bar, and rotating app jokes behind it. Back is locked, failure
-    // toasts and releases - the user never stares at a dead screen
-    // while the ledger saves underneath.
+    // Hold-on screen: an interactive checklist of every setup phase, each
+    // item ticking live as the real work lands behind it. No Continue button
+    // and no manual release - when the last phase completes the celebration
+    // starts by itself. Back is locked; failure toasts and releases.
     if (holdOn) {
         val finishJokes = remember {
             listOf(
@@ -2097,10 +2098,35 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                 "Polishing the safe-to-spend number..."
             )
         }
+        // Tappable rows: tap a phase for one line on what it actually does.
+        var expandedPhase by remember { mutableStateOf<String?>(null) }
+        val phases = listOf(
+            "Saving your profile" to "Name, campus, term dates - everything that personalizes you.",
+            "Seeding income sources" to "HELB tranches, sponsor, parent fare - counted so planning knows payday.",
+            "Setting monthly budgets" to "Rent, food, transport, airtime - envelopes seeded from your answers.",
+            "Arming reminders and bills" to "Night, Sunday, digest, monthly - every schedule switched on.",
+            "Counting opening money" to "Pocket + M-Pesa + bank becomes the ledger's starting truth.",
+            "Final sync" to "Approved rows land, opening equity set - the app is ready."
+        )
+        fun phaseDone(label: String): Boolean = when (label) {
+            "Saving your profile" -> finishProgress >= 0.2f
+            "Seeding income sources" -> finishProgress >= 0.35f
+            "Setting monthly budgets" -> finishProgress >= 0.55f
+            "Arming reminders and bills" -> finishProgress >= 0.7f
+            "Counting opening money" -> finishProgress >= 0.85f
+            else -> finishProgress >= 1f
+        }
         androidx.compose.runtime.LaunchedEffect(Unit) {
             while (true) {
                 kotlinx.coroutines.delay(1600)
                 finishJoke = (finishJoke + 1) % finishJokes.size
+            }
+        }
+        // Auto-advance: every phase done -> celebration on its own.
+        androidx.compose.runtime.LaunchedEffect(finishProgress) {
+            if (finishProgress >= 1f) {
+                kotlinx.coroutines.delay(900)
+                celebrate = true
             }
         }
         Box(
@@ -2116,20 +2142,46 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("Hold on - setting up your money", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    Text("Setting up your money", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                     com.pesaflow.app.ui.theme.PpProgress(fraction = finishProgress)
-                    Text(finishStage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         finishJokes[finishJoke % finishJokes.size],
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = { holdOn = false; celebrate = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) { Text("Continue", fontWeight = FontWeight.Bold) }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    phases.forEach { (label, detail) ->
+                        val done = phaseDone(label)
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().clickable { expandedPhase = if (expandedPhase == label) null else label },
+                            color = if (done) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        if (done) "✓" else "○",
+                                        color = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        label,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = if (done) FontWeight.SemiBold else FontWeight.Normal,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                if (expandedPhase == label) {
+                                    Text(
+                                        detail,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
