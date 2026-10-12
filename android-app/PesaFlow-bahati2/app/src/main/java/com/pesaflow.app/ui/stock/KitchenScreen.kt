@@ -352,15 +352,15 @@ fun KitchenScreen(viewModel: FinanceViewModel) {
                             OutlinedTextField(
                                 value = topUpQty,
                                 onValueChange = {
-                                    topUpQty = it.filter { ch -> ch.isDigit() || ch == '.' }.take(8)
+                                    topUpQty = it.take(20)
                                     purchaseError = null
                                 },
-                                label = { Text("Top up quantity (${item.unit})") },
+                                label = { Text("Top up quantity - digits or words (nusu, robo)") },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                 modifier = Modifier.fillMaxWidth()
                             )
-                            val purchaseQuantity = topUpQty.toDoubleOrNull()
+                            val purchaseQuantity = com.pesaflow.app.data.meals.parseFoodQuantity(topUpQty)
                             val purchaseCost = purchaseQuantity?.let { com.pesaflow.app.data.models.stockTopUpCost(item, it) }
                             Text(
                                 purchaseCost?.let { "Estimated purchase: KSh ${it.toInt()} · deducted from Food spending" }
@@ -546,10 +546,21 @@ private fun GasCard(dateFmt: java.text.SimpleDateFormat) {
                 Text("💡 $tip", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(
-                        onClick = { save(size, now, hours) },
-                        shape = RoundedCornerShape(12.dp)
-                    ) { Text("Refilled today") }
+                    // Refill is earned, not tapped: the button only exists when
+                    // the cylinder is nearly over (<=15%). Anything earlier is
+                    // a guess, and guesses strand comrades mid-chapati.
+                    if (fracLeft <= 0.15) {
+                        OutlinedButton(
+                            onClick = { save(size, now, hours) },
+                            shape = RoundedCornerShape(12.dp)
+                        ) { Text("Refilled today") }
+                    } else {
+                        Text(
+                            "Refill unlocks near empty (${(fracLeft * 100).toInt()}% left) - tap it then, not before.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     OutlinedButton(
                         onClick = { editing = true },
                         shape = RoundedCornerShape(12.dp)
