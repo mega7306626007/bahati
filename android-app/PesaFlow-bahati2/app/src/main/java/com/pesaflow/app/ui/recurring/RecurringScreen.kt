@@ -37,8 +37,19 @@ fun RecurringScreen(
     }
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         item {
-            Text("🔄 Recurring Transactions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text("${preview.count} patterns · KSh ${preview.totalMonthlyCommitment.toInt()}/mo total", style = MaterialTheme.typography.bodySmall)
+            Text("🔁 Recurring Transactions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            val yearlyTotal = preview.patterns.sumOf { it.amount * (365.0 / it.medianIntervalDays.coerceAtLeast(1)) }
+            Text(
+                "${preview.count} patterns • KSh ${preview.totalMonthlyCommitment.toInt()}/mo • KSh ${yearlyTotal.toInt()}/yr",
+                style = MaterialTheme.typography.bodySmall
+            )
+            if (yearlyTotal > 0) {
+                Text(
+                    "That yearly figure is the real price tag - worth a glance before you confirm anything.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
         if (preview.patterns.isEmpty() && preview.atRisk.isEmpty()) {
             item {
@@ -67,6 +78,16 @@ fun RecurringScreen(
                         Text("Confidence: ${"%.0f".format(pattern.confidence * 100)}%")
                     }
                     Text("KSh ${pattern.amount.toInt()} · every ${pattern.medianIntervalDays}d · ${pattern.occurrences}x")
+                    val yearlyCost = pattern.amount * (365.0 / pattern.medianIntervalDays.coerceAtLeast(1))
+                    val daysToDue = ((pattern.nextExpectedDate - System.currentTimeMillis()) / (24L * 60 * 60 * 1000)).toInt()
+                    val dueText = if (daysToDue < 0) " · overdue by ${-daysToDue}d"
+                    else if (daysToDue == 0) " · due today"
+                    else " · due in ${daysToDue}d"
+                    Text(
+                        "KSh ${yearlyCost.toInt()}/yr" + dueText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (daysToDue <= 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     if (high) {
                         Text(pattern.suggestion)
                         Text("Next expected: ${java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(pattern.nextExpectedDate))}")

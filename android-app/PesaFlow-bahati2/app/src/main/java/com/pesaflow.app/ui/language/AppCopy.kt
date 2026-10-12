@@ -455,7 +455,47 @@ fun nightLater(lang: AppLanguage): String = Copy4(
 ).pick(lang)
 
 fun nightPlanned(lang: AppLanguage): String = Copy4(
-    en = "Planned ✅", sw = "Iliyopangwa ✅", sh = "Planned ✅", mix = "Planned ✅"
+    en = "Planned ✓", sw = "Iliyopangwa ✓", sh = "Planned ✓", mix = "Planned ✓"
+).pick(lang)
+
+fun sweepTitle(left: String, lang: AppLanguage): String = Copy4(
+    en = "KSh $left unspent today 🎯", sw = "KSh $left haijakutumika leo 🎯",
+    sh = "KSh $left haijuspendiwa today 🎯", mix = "KSh $left unspent today 🎯"
+).pick(lang)
+
+fun sweepBody(left: String, lang: AppLanguage): String = Copy4(
+    en = "You left KSh $left of today's target untouched. Sweep it to savings?",
+    sw = "Umeacha KSh $left ya lengo la leo. Ihamishe kwa akiba?",
+    sh = "Umewacha KSh $left ya target ya today untouched. I-sweep kwa savings?",
+    mix = "You left KSh $left of today's target untouched. Sweep it to savings?"
+).pick(lang)
+
+fun sweepAction(lang: AppLanguage): String = Copy4(
+    en = "Sweep it 💰", sw = "Hamisha 💰", sh = "Sweep 💰", mix = "Sweep it 💰"
+).pick(lang)
+
+fun sweptTitle(left: String, lang: AppLanguage): String = Copy4(
+    en = "KSh $left swept to savings ✅", sw = "KSh $left imehamishwa kwa akiba ✅",
+    sh = "KSh $left ime-sweepiwa kwa savings ✅", mix = "KSh $left swept to savings ✅"
+).pick(lang)
+
+fun sweptBody(lang: AppLanguage): String = Copy4(
+    en = "Future you says thanks. Small days build big terms.",
+    sw = "Wewe wa baadaye anasema asante. Siku ndogo hujenga muhula mkubwa.",
+    sh = "Future you anasema thanks. Siku ndogo hujenga term kubwa.",
+    mix = "Future you says thanks. Small days build big terms."
+).pick(lang)
+
+fun overTitle(over: String, lang: AppLanguage): String = Copy4(
+    en = "KSh $over over today 📊", sw = "KSh $over zaidi leo 📊",
+    sh = "KSh $over over today 📊", mix = "KSh $over over today 📊"
+).pick(lang)
+
+fun overBody(over: String, lang: AppLanguage): String = Copy4(
+    en = "You overspent by KSh $over - it came out of your buffer. Tomorrow resets; no shame, just math.",
+    sw = "Umetumia KSh $over zaidi - zimetoka kwa akiba yako. Kesho ni upya; si aibu, ni hesabu.",
+    sh = "Ume-overspend na KSh $over - zimetoka kwa buffer yako. Kesho ni fresh; si shame, ni tu math.",
+    mix = "You overspent by KSh $over - it came out of your buffer. Tomorrow resets; no shame, just math."
 ).pick(lang)
 
 fun savedBody(fig: String, cat: String, lang: AppLanguage): String = Copy4(

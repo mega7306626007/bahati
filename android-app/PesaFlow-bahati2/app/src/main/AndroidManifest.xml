@@ -83,6 +83,15 @@
             </intent-filter>
         </receiver>
 
+        <!-- Nightly savings-sweep tap action: files the sweep, app-internal only -->
+        <receiver
+            android:name=".data.notifications.SweepReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.pesaflow.app.SWEEP_SAVINGS" />
+            </intent-filter>
+        </receiver>
+
         <!-- Notification-based transaction detection (opt-in, off by default) -->
         <service
             android:name=".data.notifications.MpesaNotificationListener"

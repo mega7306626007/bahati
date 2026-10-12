@@ -1979,6 +1979,7 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                             ReminderScheduler.scheduleMonthlyReport(appContext)
                             ReminderScheduler.scheduleDaily(appContext)
                             ReminderScheduler.scheduleLunchScan(appContext)
+                            ReminderScheduler.scheduleSavingsSweep(appContext)
                             val feesAmt = feesAmount.toDoubleOrNull()?.takeIf { it > 0 }
                             if (feesAmt != null && feesDueMillis > 0L &&
                                 viewModel.bills.value.none { it.name == "Semester fees" && it.status != "PAID" }

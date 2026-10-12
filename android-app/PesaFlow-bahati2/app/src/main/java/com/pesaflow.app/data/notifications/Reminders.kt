@@ -295,6 +295,31 @@ object ReminderScheduler {
         WorkManager.getInstance(context).cancelUniqueWork(NIGHT_TAG)
     }
 
+    private const val SWEEP_TAG = "pesaflow_savings_sweep"
+
+    // Nightly savings sweep, 21:45: unspent daily target becomes a sweep
+    // offer, overruns get an honest note. Self-perpetuating one-time chain
+    // like the night report - tomorrow is armed by today's run.
+    fun scheduleSavingsSweep(context: Context) {
+        val cal = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 21)
+            set(java.util.Calendar.MINUTE, 45)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }
+        var delay = cal.timeInMillis - System.currentTimeMillis()
+        if (delay < 60 * 1000) delay += 24L * 60 * 60 * 1000
+        val req = androidx.work.OneTimeWorkRequestBuilder<SavingsSweepWorker>()
+            .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+            .addTag(SWEEP_TAG)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(SWEEP_TAG, androidx.work.ExistingWorkPolicy.REPLACE, req)
+    }
+
+    fun cancelSavingsSweep(context: Context) {
+        WorkManager.getInstance(context).cancelUniqueWork(SWEEP_TAG)
+    }
+
     // Tired-tap: the night report returns in one hour (max twice a night,
     // enforced by the receiver). Doesn't disturb the daily chain.
     fun snoozeNightReport(context: Context) {
@@ -1142,6 +1167,135 @@ class MonthlyReportWorker(appContext: Context, params: WorkerParameters) : Corou
             Result.success()
         } catch (e: Exception) {
             Result.failure()
+        }
+    }
+}
+
+
+class SavingsSweepWorker(appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
+
+    override suspend fun doWork(): Result {
+        ReminderScheduler.scheduleSavingsSweep(applicationContext)
+        return try {
+            val ctx = applicationContext
+            val prefs = ctx.getSharedPreferences("pesaflow_prefs", Context.MODE_PRIVATE)
+            val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                .format(java.util.Date(System.currentTimeMillis()))
+            // One decision per day: a swept or notified day never re-fires,
+            // even if the worker runs again.
+            if (prefs.getBoolean("sweep_done_" + today, false) ||
+                prefs.getBoolean("sweep_notified_" + today, false)
+            ) {
+                return Result.success()
+            }
+            val lang = langOf(prefs.getString("app_language", "MIXED") ?: "MIXED")
+            val db = AppDatabase.getDatabase(ctx)
+            val txs = db.transactionDao().readAllChunked()
+            val now = System.currentTimeMillis()
+            val range = com.pesaflow.app.data.time.todayRange(now)
+            val spent = txs.filter {
+                it.type == TransactionType.EXPENSE && !it.isSample &&
+                    it.dateTimestamp in range.startInclusive until range.endExclusive
+            }.sumOf { it.amount }
+            // Honest target only: the user-set ALL envelope per day. No
+            // envelope, no notification - never invent a target.
+            val monthlyAll = db.budgetDao().getAllBudgets().first()
+                .firstOrNull { it.category == "ALL" }?.limitAmount
+            val target = com.pesaflow.app.data.finance.dailyTargetFrom(null, monthlyAll)
+            when (val v = com.pesaflow.app.data.finance.sweepVerdict(spent, target)) {
+                is com.pesaflow.app.data.finance.SweepVerdict.Sweep -> {
+                    NotificationHelper.ensureChannel(ctx)
+                    val sweepPending = android.app.PendingIntent.getBroadcast(
+                        ctx, 300,
+                        Intent(ctx, SweepReceiver::class.java).apply {
+                            action = SweepReceiver.ACTION_SWEEP_SAVINGS
+                            putExtra("amount", v.surplus)
+                        },
+                        android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                    )
+                    val note = androidx.core.app.NotificationCompat.Builder(ctx, NotificationHelper.CHANNEL_ID)
+                        .setSmallIcon(android.R.drawable.ic_dialog_info)
+                        .setContentTitle(com.pesaflow.app.ui.language.sweepTitle(v.surplus.toInt().toString(), lang))
+                        .setContentText(com.pesaflow.app.ui.language.sweepBody(v.surplus.toInt().toString(), lang))
+                        .setStyle(androidx.core.app.NotificationCompat.BigTextStyle()
+                            .bigText(com.pesaflow.app.ui.language.sweepBody(v.surplus.toInt().toString(), lang)))
+                        .setAutoCancel(true)
+                        .addAction(
+                            androidx.core.app.NotificationCompat.Action.Builder(
+                                android.R.drawable.ic_dialog_info,
+                                com.pesaflow.app.ui.language.sweepAction(lang),
+                                sweepPending
+                            ).build()
+                        )
+                        .build()
+                    try {
+                        (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).notify(30, note)
+                        prefs.edit().putBoolean("sweep_notified_" + today, true).apply()
+                    } catch (e: SecurityException) {
+                        // Permission missing - tomorrow's chain already re-armed above.
+                    }
+                }
+                is com.pesaflow.app.data.finance.SweepVerdict.Over ->
+                    NotificationHelper.show(
+                        ctx, 31,
+                        com.pesaflow.app.ui.language.overTitle(v.overage.toInt().toString(), lang),
+                        com.pesaflow.app.ui.language.overBody(v.overage.toInt().toString(), lang)
+                    )
+                else -> Unit
+            }
+            Result.success()
+        } catch (e: Exception) {
+            Result.failure()
+        }
+    }
+}
+
+
+class SweepReceiver : BroadcastReceiver() {
+    companion object {
+        const val ACTION_SWEEP_SAVINGS = "com.pesaflow.app.SWEEP_SAVINGS"
+    }
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != ACTION_SWEEP_SAVINGS) return
+        val result = goAsync()
+        scope.launch {
+            try {
+                val amount = intent.getDoubleExtra("amount", 0.0)
+                val prefs = context.getSharedPreferences("pesaflow_prefs", Context.MODE_PRIVATE)
+                val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                    .format(java.util.Date(System.currentTimeMillis()))
+                if (amount > 0 && !prefs.getBoolean("sweep_done_" + today, false)) {
+                    val db = AppDatabase.getDatabase(context)
+                    db.transactionDao().insertTransaction(
+                        com.pesaflow.app.data.models.Transaction(
+                            amount = amount,
+                            type = com.pesaflow.app.data.models.TransactionType.SAVING,
+                            category = "Savings",
+                            dateTimestamp = System.currentTimeMillis(),
+                            merchant = "Daily sweep",
+                            description = "Nightly sweep of unspent daily target",
+                            paymentMethod = com.pesaflow.app.data.models.PaymentMethod.OTHER,
+                            source = com.pesaflow.app.data.models.TransactionSource.MANUAL
+                        )
+                    )
+                    prefs.edit().putBoolean("sweep_done_" + today, true).apply()
+                    val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                    manager.cancel(30)
+                    val lang = langOf(prefs.getString("app_language", "MIXED") ?: "MIXED")
+                    NotificationHelper.show(
+                        context, 32,
+                        com.pesaflow.app.ui.language.sweptTitle(amount.toInt().toString(), lang),
+                        com.pesaflow.app.ui.language.sweptBody(lang)
+                    )
+                }
+            } catch (e: Exception) {
+                // Never crash the receiver; the user can save manually.
+            } finally {
+                result.finish()
+            }
         }
     }
 }
