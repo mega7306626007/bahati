@@ -1,6 +1,7 @@
 package com.pesaflow.app.ui.dashboard
 
 import androidx.compose.foundation.background
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -297,13 +298,60 @@ fun ScrollableChatArea(
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) state.animateScrollToItem(messages.size - 1)
     }
+    // Day dividers: Today / Yesterday / date chips between messages from
+    // different days, WhatsApp-style. Computed once per message list.
+    val dayFmt = remember { java.text.SimpleDateFormat("d MMM yyyy", java.util.Locale.getDefault()) }
+    fun dayLabel(ts: Long): String {
+        val cal = java.util.Calendar.getInstance()
+        val today = dayFmt.format(java.util.Date(cal.timeInMillis))
+        cal.add(java.util.Calendar.DAY_OF_YEAR, -1)
+        val yesterday = dayFmt.format(java.util.Date(cal.timeInMillis))
+        val day = dayFmt.format(java.util.Date(ts))
+        return when (day) {
+            today -> "Today"
+            yesterday -> "Yesterday"
+            else -> day
+        }
+    }
+    val threaded = remember(messages) {
+        val out = mutableListOf<Any>()
+        var last = ""
+        messages.forEach { m ->
+            val day = dayLabel(m.timestamp)
+            if (day != last) {
+                out.add(day)
+                last = day
+            }
+            out.add(m)
+        }
+        out
+    }
     LazyColumn(
         state = state,
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        items(messages) { message ->
-            ChatMessageBubble(message = message, onAction = onAction, onDismissAction = onDismissAction)
+        items(threaded) { item ->
+            if (item is String) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            item,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            } else {
+                ChatMessageBubble(message = item as ChatMessage, onAction = onAction, onDismissAction = onDismissAction)
+            }
         }
     }
 }
@@ -337,11 +385,33 @@ fun ChatMessageBubble(
             modifier = Modifier.widthIn(max = 320.dp)
         ) {
             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                Text(
-                    message.text,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (message.isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-                )
+                if (!message.isUser && message.text == "Thinking...") {
+                    // Typing indicator: three dots breathing in turn instead
+                    // of a dead "Thinking..." text bubble.
+                    val wave = androidx.compose.animation.core.rememberInfiniteTransition(label = "thinking")
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        repeat(3) { i ->
+                            val alpha by wave.animateFloat(
+                                initialValue = 0.25f,
+                                targetValue = 1f,
+                                animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                                    animation = androidx.compose.animation.core.tween(600, delayMillis = i * 200),
+                                    repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+                                ),
+                                label = "dot$i"
+                            )
+                            androidx.compose.foundation.Canvas(modifier = Modifier.padding(vertical = 6.dp).size(8.dp)) {
+                                drawCircle(color = androidx.compose.ui.graphics.Color.Gray.copy(alpha = alpha))
+                            }
+                        }
+                    }
+                } else {
+                    Text(
+                        message.text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (message.isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                    )
+                }
                 message.action?.let { action ->
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
