@@ -76,8 +76,12 @@ fun SettingsScreen(viewModel: FinanceViewModel) {
     var lastRun by remember { mutableStateOf(prefs.getLong("last_run", 0)) }
     var notifTransactions by remember { mutableStateOf(prefs.getBoolean("daily_summary", false)) }
     var notifWeekly by remember { mutableStateOf(prefs.getBoolean("weekly_recap", false)) }
-    var sundayReport by remember { mutableStateOf(prefs.getBoolean("sunday_report", false)) }
-    var nightReport by remember { mutableStateOf(prefs.getBoolean("night_report", true)) }
+var sundayReport by remember { mutableStateOf(prefs.getBoolean("sunday_report", false)) }
+var nightReport by remember { mutableStateOf(prefs.getBoolean("night_report", true)) }
+var monthlyReport by remember { mutableStateOf(prefs.getBoolean("monthly_report", true)) }
+var dailyDigest by remember { mutableStateOf(prefs.getBoolean("daily_digest", true)) }
+var lunchScan by remember { mutableStateOf(prefs.getBoolean("lunch_scan", true)) }
+var savingsSweep by remember { mutableStateOf(prefs.getBoolean("savings_sweep", true)) }
     var smsGranted by remember { mutableStateOf(hasSmsPermission(context)) }
     var smsAsked by remember { mutableStateOf(false) }
     val smsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -680,7 +684,10 @@ fun SettingsScreen(viewModel: FinanceViewModel) {
                             }) { Text("Keep alive") }
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Daily spending summary", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Daily spending summary", style = MaterialTheme.typography.bodySmall)
+                                Text("Spent today + pace, roughly every 24h", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                             Switch(checked = notifTransactions, onCheckedChange = {
                                 notifTransactions = it
                                 prefs.edit().putBoolean("daily_summary", it).putString("notif_preset", "custom").apply()
@@ -693,7 +700,10 @@ fun SettingsScreen(viewModel: FinanceViewModel) {
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Weekly summaries", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Weekly summaries", style = MaterialTheme.typography.bodySmall)
+                                Text("7-day recap, roughly weekly", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                             Switch(checked = notifWeekly, onCheckedChange = {
                                 notifWeekly = it
                                 prefs.edit().putBoolean("weekly_recap", it).putString("notif_preset", "custom").apply()
@@ -734,6 +744,58 @@ fun SettingsScreen(viewModel: FinanceViewModel) {
                                     ReminderScheduler.scheduleNightReport(context)
                                     NotificationHelper.show(context, 13, "Night report on ✓", "See you tonight 9:30pm. 🌙")
                                 } else ReminderScheduler.cancelNightReport(context)
+                            })
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Morning digest 9am", style = MaterialTheme.typography.bodySmall)
+                                Text("Day-ahead briefing: bills due, budget pace", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(checked = dailyDigest, onCheckedChange = {
+                                dailyDigest = it
+                                prefs.edit().putBoolean("daily_digest", it).putString("notif_preset", "custom").apply()
+                                notifPreset = "custom"
+                                if (it) ReminderScheduler.scheduleDailyDigest(context) else ReminderScheduler.cancelDailyDigest(context)
+                            })
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Monthly report, 1st 8am", style = MaterialTheme.typography.bodySmall)
+                                Text("Month totals + top 3 categories", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(checked = monthlyReport, onCheckedChange = {
+                                monthlyReport = it
+                                prefs.edit().putBoolean("monthly_report", it).putString("notif_preset", "custom").apply()
+                                notifPreset = "custom"
+                                if (it) ReminderScheduler.scheduleMonthlyReport(context) else ReminderScheduler.cancelMonthlyReport(context)
+                            })
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Meal-time SMS sweeps", style = MaterialTheme.typography.bodySmall)
+                                Text("Silent filing 7:00, 10:30, 12:30 - never pings", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(checked = lunchScan, onCheckedChange = {
+                                lunchScan = it
+                                prefs.edit().putBoolean("lunch_scan", it).putString("notif_preset", "custom").apply()
+                                notifPreset = "custom"
+                                if (it) ReminderScheduler.scheduleLunchScan(context) else ReminderScheduler.cancelLunchScan(context)
+                            })
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Savings sweep 9:45pm", style = MaterialTheme.typography.bodySmall)
+                                Text("Unspent daily target offered to savings", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(checked = savingsSweep, onCheckedChange = {
+                                savingsSweep = it
+                                prefs.edit().putBoolean("savings_sweep", it).putString("notif_preset", "custom").apply()
+                                notifPreset = "custom"
+                                if (it) ReminderScheduler.scheduleSavingsSweep(context) else ReminderScheduler.cancelSavingsSweep(context)
                             })
                         }
                     }

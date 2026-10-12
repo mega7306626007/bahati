@@ -1969,6 +1969,9 @@ fun OnboardingScreen(viewModel: FinanceViewModel, onDone: () -> Unit) {
                                 .putBoolean("sunday_report", true)
                                 .putBoolean("daily_summary", true)
                                 .putBoolean("lunch_scan", true)
+                                .putBoolean("monthly_report", true)
+                                .putBoolean("daily_digest", true)
+                                .putBoolean("savings_sweep", true)
                                 .apply()
                             finishProgress = 0.7f
                             finishStage = "Arming reminders and bills"
