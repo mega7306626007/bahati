@@ -90,5 +90,13 @@ sealed interface BuddyIntent {
     // ledger for the purchase first. A match proposes filing it under the
     // inferred category; a miss offers to add it backdated. Confirm card first.
     data class LogPurchase(val item: String, val amount: Double, val monthOffset: Int?) : BuddyIntent
+    // Full edit control: contacts, pantry and identity join the mutation
+    // surface. Drafts carry nulls so missing entities ask instead of acting;
+    // complete drafts ALWAYS confirm-card first (except the nickname, which
+    // is display-only and applies immediately like other preferences).
+    data class CreateContact(val name: String?, val relationship: String?, val category: String?) : BuddyIntent
+    data class CreateStock(val name: String?, val qty: Double?) : BuddyIntent
+    data class UseStock(val name: String?) : BuddyIntent
+    data class SetNickname(val name: String?) : BuddyIntent
     data object Unknown : BuddyIntent
 }

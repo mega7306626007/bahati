@@ -69,6 +69,10 @@ object BuddyIntentRouter {
         ) {
             return RoutedCommand(BuddyIntent.Unknown, entities, 0f, normalized)
         }
+        routeCreateContact(normalized, entities)?.let { return it }
+        routeCreateStock(normalized, entities)?.let { return it }
+        routeUseStock(normalized, entities)?.let { return it }
+        routeSetNickname(normalized)?.let { return it }
         routeLogPurchase(normalized, entities)?.let { return it }
         routeAddTransaction(normalized, entities)?.let { return it }
         // Income: expected paydays draft sources; plain "record salary" stays
@@ -193,6 +197,86 @@ object BuddyIntentRouter {
             else -> null
         }
         return RoutedCommand(BuddyIntent.LogPurchase(item, amount, monthOffset), entities, 0.8f, normalized)
+    }
+
+    private val CONTACT_VERBS = listOf("remember", "kumbuka")
+    private val CONTACT_PHRASES = listOf("add contact", "save contact", "new contact")
+    private val STOCK_VERBS = listOf("stock", "restock")
+    private val USE_VERBS = listOf("used", "use", "nimetumia")
+    private val NICK_PHRASES = listOf("call me", "my name is", "niite", "naito")
+    private val UNIT_WORDS = listOf("kg", "g", "gram", "litre", "l", "packet", "pack", "bunch", "pcs")
+    private val STOCK_FILLER = listOf("to", "on", "the", "shelf", "stock", "up", "buy", "add", "a", "some", "onto", "in", "kitchen", "pantry")
+
+    // "remember Nancy as mom (for upkeep)": name + relationship + category.
+    // Missing name drafts an ask; relationship/category fall back honestly.
+    private fun routeCreateContact(normalized: String, entities: BuddyEntities): RoutedCommand? {
+        if (!hasVerb(normalized, *CONTACT_VERBS.toTypedArray()) &&
+            CONTACT_PHRASES.none(normalized::contains)
+        ) return null
+        var rest = normalized
+        (CONTACT_VERBS + listOf("add", "save", "new", "contact")).forEach { v ->
+            rest = rest.replace(Regex("(?<![a-z])$v(?![a-z])"), " ")
+        }
+        val asParts = rest.split(" as ")
+        val name = asParts.getOrNull(0)?.trim()?.takeIf { it.isNotBlank() }
+        val relCat = asParts.getOrNull(1)?.trim().orEmpty()
+        val rel = relCat.split(" for ").getOrNull(0)?.trim()?.takeIf { it.isNotBlank() }
+        val cat = relCat.split(" for ").getOrNull(1)?.trim()?.takeIf { it.isNotBlank() }
+            ?: entities.category
+        return RoutedCommand(BuddyIntent.CreateContact(name, rel, cat), entities, 0.8f, normalized)
+    }
+
+    private fun isFoodWord(word: String): Boolean =
+        com.pesaflow.app.data.meals.stapleByName(word) != null || word in UNIT_WORDS
+
+    // "add unga 2kg (to shelf)" / "buy sukuma wiki": pantry, never ledger.
+    // "buy lunch 250" is NOT food-stocked - it falls through to LogPurchase.
+    private fun routeCreateStock(normalized: String, entities: BuddyEntities): RoutedCommand? {
+        val stockedVerb = hasVerb(normalized, *STOCK_VERBS.toTypedArray())
+        val tokens = normalized.split(Regex("[^a-z0-9]+")).filter { it.isNotBlank() }.toSet()
+        val foodHit = tokens.any { isFoodWord(it) } ||
+            com.pesaflow.app.data.meals.stapleByName(normalized.split(" as ").first().trim()) != null
+        if (!stockedVerb && !(hasVerb(normalized, "buy", "add") && foodHit)) return null
+        val qty = entities.amount ?: com.pesaflow.app.ui.dashboard.BuddyBrain.extractAmount(
+            normalized.replace(Regex("(\\d)([a-z])"), "$1 $2")
+        )
+        var item = merchantRemainder(normalized, qty, entities.category).orEmpty().lowercase()
+        UNIT_WORDS.forEach { u ->
+            item = item.replace(Regex("(?<![a-z0-9])$u(?![a-z0-9])"), " ")
+        }
+        STOCK_FILLER.forEach { w ->
+            item = item.replace(Regex("(?<![a-z])$w(?![a-z])"), " ")
+        }
+        item = item.trim().replace(Regex("\\s+"), " ")
+        if (item.isBlank() && !stockedVerb) return null
+        return RoutedCommand(
+            BuddyIntent.CreateStock(item.takeIf { it.isNotBlank() }, qty),
+            entities, 0.8f, normalized
+        )
+    }
+
+    // "used unga (today)" / "use half unga": files a pantry day. Generic
+    // "use X" (languages, themes) is untouched - only food words route here.
+    private fun routeUseStock(normalized: String, entities: BuddyEntities): RoutedCommand? {
+        if (!hasVerb(normalized, *USE_VERBS.toTypedArray())) return null
+        val tokens = normalized.split(Regex("[^a-z0-9]+")).filter { it.isNotBlank() }.toSet()
+        val foodHit = tokens.any { isFoodWord(it) } ||
+            listOf("shelf", "stock", "kitchen", "pantry", "ugali", "food").any { normalized.contains(it) }
+        if (!foodHit) return null
+        var item = merchantRemainder(normalized, entities.amount, entities.category).orEmpty().lowercase()
+        (USE_VERBS + STOCK_FILLER + listOf("today", "leo", "half", "nusu")).forEach { w ->
+            item = item.replace(Regex("(?<![a-z])$w(?![a-z])"), " ")
+        }
+        item = item.trim().replace(Regex("\\s+"), " ")
+        return RoutedCommand(BuddyIntent.UseStock(item.takeIf { it.isNotBlank() }), entities, 0.8f, normalized)
+    }
+
+    // "call me Mo" / "my name is Mo": display name, applies immediately.
+    private fun routeSetNickname(normalized: String): RoutedCommand? {
+        val hit = NICK_PHRASES.firstOrNull { normalized.contains(it) } ?: return null
+        val name = normalized.substringAfter(hit).trim().replace(Regex("\\s+"), " ")
+        val entities = BuddyEntities()
+        return RoutedCommand(BuddyIntent.SetNickname(name.takeIf { it.isNotBlank() }), entities, 0.85f, normalized)
     }
 
     private val PLAN_WORDS = listOf("survive", "surviv", "stretch", "make it", "prepare", "plan")

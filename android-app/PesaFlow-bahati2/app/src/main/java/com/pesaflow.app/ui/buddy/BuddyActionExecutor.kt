@@ -40,6 +40,10 @@ object BuddyActionExecutor {
                 is BuddyCommand.EditBillDate -> editBillDate(viewModel, command, lang)
                 is BuddyCommand.EditBill -> editBill(viewModel, command, lang)
                 is BuddyCommand.RecordDebtPayment -> recordDebtPayment(viewModel, command, lang)
+                is BuddyCommand.AddContactRule -> addContactRule(viewModel, command, lang)
+                is BuddyCommand.AddStockItem -> addStockItem(viewModel, command, lang)
+                is BuddyCommand.UseStockItem -> useStockItem(viewModel, command, lang)
+                is BuddyCommand.SetNickname -> setNickname(viewModel, command, lang)
             }
             BuddyAuditLog.record(
                 BuddyAuditEntry(
@@ -85,6 +89,10 @@ object BuddyActionExecutor {
         is BuddyCommand.EditBillDate -> "bill.move_date"
         is BuddyCommand.EditBill -> "bill.edit"
         is BuddyCommand.RecordDebtPayment -> "debt.pay"
+        is BuddyCommand.AddContactRule -> "contact.add_rule"
+        is BuddyCommand.AddStockItem -> "stock.add"
+        is BuddyCommand.UseStockItem -> "stock.use"
+        is BuddyCommand.SetNickname -> "app.nickname"
     }
 
     private fun applyPreference(
@@ -244,6 +252,66 @@ object BuddyActionExecutor {
         return BuddyStrings.incomeTracked(
             command.label, MoneyFormatter.compact(Money.of(command.amount)), lang
         )
+    }
+
+    private fun addContactRule(
+        viewModel: FinanceViewModel,
+        command: BuddyCommand.AddContactRule,
+        lang: AppLanguage
+    ): String {
+        require(command.name.isNotBlank()) { "contact needs a name" }
+        val ctx = appContext(viewModel)
+        val prefs = ctx.getSharedPreferences("pesaflow_prefs", android.content.Context.MODE_PRIVATE)
+        val saved = com.pesaflow.app.data.ledger.ContactBook.save(
+            prefs, command.name, command.name,
+            command.relationship, command.category, "BOTH", "", ""
+        )
+        check(saved) { "that name would not save - try the Contact Book screen" }
+        com.pesaflow.app.data.ledger.saveContactMemory(
+            prefs, command.name, command.relationship, command.category, "BOTH", ""
+        )
+        viewModel.reprocessContactSmsHistory(command.name, "")
+        return BuddyStrings.contactSaved(command.name, command.relationship, command.category, lang)
+    }
+
+    private fun addStockItem(
+        viewModel: FinanceViewModel,
+        command: BuddyCommand.AddStockItem,
+        lang: AppLanguage
+    ): String {
+        require(command.name.isNotBlank()) { "stock needs a name" }
+        require(command.qty > 0) { "quantity must be positive" }
+        val staple = com.pesaflow.app.data.meals.stapleByName(command.name)
+        viewModel.addKitchenStock(
+            command.name, "kg", command.qty, command.qty,
+            staple?.dailyUse ?: 0.25, 0.0
+        )
+        return BuddyStrings.stockAdded(command.name, command.qty.toInt().toString(), lang)
+    }
+
+    private fun useStockItem(
+        viewModel: FinanceViewModel,
+        command: BuddyCommand.UseStockItem,
+        lang: AppLanguage
+    ): String {
+        require(command.name.isNotBlank()) { "which shelf item?" }
+        val item = viewModel.kitchenStock.value.firstOrNull {
+            it.name.equals(command.name, ignoreCase = true)
+        }
+        check(item != null) { BuddyStrings.noStockItem(command.name, lang) }
+        viewModel.logStockUse(item)
+        return BuddyStrings.stockUsed(item.name, lang)
+    }
+
+    private fun setNickname(
+        viewModel: FinanceViewModel,
+        command: BuddyCommand.SetNickname,
+        lang: AppLanguage
+    ): String {
+        require(command.name.isNotBlank()) { "what should I call you?" }
+        viewModel.setNickname(command.name)
+        check(viewModel.nickname.value == command.name) { "nickname did not apply" }
+        return BuddyStrings.nicknameSet(command.name, lang)
     }
 
     private fun appContext(viewModel: FinanceViewModel): android.content.Context =

@@ -71,7 +71,11 @@ object BuddyPhaseOne {
             routed.intent is BuddyIntent.CreateReminder ||
             routed.intent is BuddyIntent.ListReminders ||
             routed.intent is BuddyIntent.CancelReminders ||
-            routed.intent is BuddyIntent.ApplyPlan
+            routed.intent is BuddyIntent.ApplyPlan ||
+            routed.intent is BuddyIntent.CreateContact ||
+            routed.intent is BuddyIntent.CreateStock ||
+            routed.intent is BuddyIntent.UseStock ||
+            routed.intent is BuddyIntent.SetNickname
         ) {
             return BuddyResponseComposer.compose(routed.intent, state)
         }
@@ -90,7 +94,10 @@ object BuddyPhaseOne {
         when (val intent = routed.intent) {
             is BuddyIntent.FindTransactions -> {
                 val result = BuddyTxnQuery.summarize(BuddyTxnQuery.filter(txs, intent.filter))
-                return BuddyResponseComposer.answerTxnQuery(intent.filter, result, state.lang)
+                // RAG provenance: the same retrieval pass that found the rows
+                // names every source behind the answer.
+                val sources = BuddyRetrieval.retrieve(raw, txs)
+                return BuddyResponseComposer.answerTxnQuery(intent.filter, result, state.lang, sources)
             }
             is BuddyIntent.LogPurchase ->
                 return resolveLogPurchase(txs, intent, lang)

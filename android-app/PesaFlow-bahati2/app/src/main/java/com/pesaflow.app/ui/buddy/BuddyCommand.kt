@@ -18,6 +18,22 @@ sealed interface BuddyCommand {
         val dateTimestamp: Long? = null
     ) : BuddyCommand
 
+    // Contact rule (canonical ContactBook.save + memory + SMS rescan).
+    // ALWAYS renders a confirm card first.
+    data class AddContactRule(
+        val name: String,
+        val relationship: String,
+        val category: String
+    ) : BuddyCommand
+
+    // Pantry row (canonical addKitchenStock / logStockUse - never raw Room).
+    // ALWAYS renders a confirm card first.
+    data class AddStockItem(val name: String, val qty: Double) : BuddyCommand
+    data class UseStockItem(val name: String) : BuddyCommand
+
+    // Display name (canonical setNickname). Low-risk: executes immediately.
+    data class SetNickname(val name: String) : BuddyCommand
+
     // One or many ledger rows filed under a new category (canonical
     // replaceTransaction: row rewritten, category memory learns).
     data class ReclassifyTransaction(val txIds: List<String>, val category: String) : BuddyCommand

@@ -175,6 +175,41 @@ object BuddyResponseComposer {
                 BuddyOutcome.ProposeCommand(command, summarize(command, state.lang))
             }
         }
+        is BuddyIntent.CreateContact -> {
+            if (intent.name.isNullOrBlank()) {
+                BuddyOutcome.Ask(BuddyStrings.askContactName(state.lang))
+            } else {
+                val command = BuddyCommand.AddContactRule(
+                    intent.name, intent.relationship.orEmpty(), intent.category ?: "Other"
+                )
+                BuddyOutcome.ProposeCommand(command, summarize(command, state.lang))
+            }
+        }
+        is BuddyIntent.CreateStock -> {
+            if (intent.name.isNullOrBlank()) {
+                BuddyOutcome.Ask(BuddyStrings.askStockName(state.lang))
+            } else if (intent.qty == null || intent.qty <= 0) {
+                BuddyOutcome.Ask(BuddyStrings.askStockQty(intent.name, state.lang))
+            } else {
+                val command = BuddyCommand.AddStockItem(intent.name, intent.qty)
+                BuddyOutcome.ProposeCommand(command, summarize(command, state.lang))
+            }
+        }
+        is BuddyIntent.UseStock -> {
+            if (intent.name.isNullOrBlank()) {
+                BuddyOutcome.Ask(BuddyStrings.askStockName(state.lang))
+            } else {
+                val command = BuddyCommand.UseStockItem(intent.name)
+                BuddyOutcome.ProposeCommand(command, summarize(command, state.lang))
+            }
+        }
+        is BuddyIntent.SetNickname -> {
+            if (intent.name.isNullOrBlank()) {
+                BuddyOutcome.Ask(BuddyStrings.askNickname(state.lang))
+            } else {
+                BuddyOutcome.ExecuteNow(BuddyCommand.SetNickname(intent.name))
+            }
+        }
         is BuddyIntent.CreateReminder -> {
             if (intent.conditional) {
                 BuddyOutcome.Ask(BuddyStrings.conditionalDecline(state.lang))
@@ -230,7 +265,7 @@ object BuddyResponseComposer {
             BuddyOutcome.Unhandled
     }
 
-    fun answerTxnQuery(filter: TxnFilter, result: TxnQueryResult, lang: com.pesaflow.app.data.models.AppLanguage): BuddyOutcome {
+    fun answerTxnQuery(filter: TxnFilter, result: TxnQueryResult, lang: com.pesaflow.app.data.models.AppLanguage, sources: List<RetrievedChunk> = emptyList()): BuddyOutcome {
         if (result.count == 0) return BuddyOutcome.Answer(BuddyStrings.noTxnMatch(lang))
         val label = BuddyStrings.txnQueryLabel(
             filter.merchant,
@@ -239,7 +274,9 @@ object BuddyResponseComposer {
             lang
         )
         val head = BuddyStrings.txnQueryHead(result.count, label, ksh(result.total), lang)
-        return BuddyOutcome.Answer(BuddyStrings.txnQuery(head, result.lines, lang))
+        var text = BuddyStrings.txnQuery(head, result.lines, lang)
+        BuddyRetrieval.sourcesLine(sources).takeIf { it.isNotBlank() }?.let { text += "\n" + it }
+        return BuddyOutcome.Answer(text)
     }
 
     fun askWhich(
@@ -489,5 +526,13 @@ object BuddyResponseComposer {
             BuddyStrings.summarizeReminder(command.title, command.scheduleLabel, lang)
         BuddyCommand.CancelAllReminders ->
             BuddyStrings.summarizeCancelReminders(lang)
+        is BuddyCommand.AddContactRule ->
+            BuddyStrings.summarizeContact(command.name, command.relationship, command.category, lang)
+        is BuddyCommand.AddStockItem ->
+            BuddyStrings.summarizeStock(command.name, ksh(command.qty), lang)
+        is BuddyCommand.UseStockItem ->
+            BuddyStrings.summarizeStockUse(command.name, lang)
+        is BuddyCommand.SetNickname ->
+            BuddyStrings.summarizeNickname(command.name, lang)
     }
 }

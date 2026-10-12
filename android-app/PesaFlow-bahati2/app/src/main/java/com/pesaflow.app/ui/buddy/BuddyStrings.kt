@@ -2265,6 +2265,97 @@ object BuddyStrings {
         "Kucreate goal?\n$title · $fig · siku 90"
     )
 
+    fun askContactName(lang: AppLanguage): String = pick(
+        lang,
+        "Who should I remember? E.g. 'remember Nancy as mom'.",
+        "Nimkumbuke nani? Mf. 'mkumbuke Nancy kama mom'.",
+        "Nikumbuke nani? Mf. 'remember Nancy as mom'."
+    )
+
+    fun summarizeContact(name: String, rel: String, cat: String, lang: AppLanguage): String = pick(
+        lang,
+        "Remember $name?\n${rel.ifBlank { "no label" }} · files as $cat",
+        "Kumkumbuka $name?\n${rel.ifBlank { "bila lebo" }} · files kama $cat",
+        "Kumremember $name?\n${rel.ifBlank { "no label" }} · files as $cat"
+    )
+
+    fun contactSaved(name: String, rel: String, cat: String, lang: AppLanguage): String = pick(
+        lang,
+        "$name saved${if (rel.isNotBlank()) " ($rel)" else ""} - files as $cat from the next scan.",
+        "$name amehifadhiwa${if (rel.isNotBlank()) " ($rel)" else ""} - files kama $cat kuanzia scan inayofuata.",
+        "$name amesaveiwa${if (rel.isNotBlank()) " ($rel)" else ""} - files as $cat from next scan."
+    )
+
+    fun askStockName(lang: AppLanguage): String = pick(
+        lang,
+        "Which foodstuff? E.g. 'stock unga 2'.",
+        "Chakula gani? Mf. 'stock unga 2'.",
+        "Foodstuff gani? Mf. 'stock unga 2'."
+    )
+
+    fun askStockQty(name: String, lang: AppLanguage): String = pick(
+        lang,
+        "How much $name? Packs or kg - 'nusu' and 'robo' count too.",
+        "$name kiasi gani? Pakiti au kg - 'nusu' na 'robo' zinahesabika pia.",
+        "$name ngapi? Packs ama kg - 'nusu' na 'robo' count pia."
+    )
+
+    fun summarizeStock(name: String, fig: String, lang: AppLanguage): String = pick(
+        lang,
+        "Stock the shelf?\n$name · $fig",
+        "Kujaza rafu?\n$name · $fig",
+        "Kustock shelf?\n$name · $fig"
+    )
+
+    fun stockAdded(name: String, fig: String, lang: AppLanguage): String = pick(
+        lang,
+        "$name stocked ($fig) - shelf updated.",
+        "$name imejazwa ($fig) - rafu imeupdateiwa.",
+        "$name imestockiwa ($fig) - shelf updated."
+    )
+
+    fun summarizeStockUse(name: String, lang: AppLanguage): String = pick(
+        lang,
+        "Log a day of $name?\nBurns one cooking day off the shelf.",
+        "Kurekodi siku moja ya $name?\nInachoma siku moja ya kupika kutoka rafu.",
+        "Kulog siku moja ya $name?\nInaburn siku moja ya kupika kutoka shelf."
+    )
+
+    fun stockUsed(name: String, lang: AppLanguage): String = pick(
+        lang,
+        "$name used - shelf moved down a day.",
+        "$name imetumika - rafu imeshuka siku moja.",
+        "$name used - shelf imeshuka siku moja."
+    )
+
+    fun noStockItem(name: String, lang: AppLanguage): String = pick(
+        lang,
+        "No $name on the shelf - stock it first.",
+        "Hakuna $name rafu - ijaze kwanza.",
+        "Hakuna $name kwa shelf - istock kwanza."
+    )
+
+    fun askNickname(lang: AppLanguage): String = pick(
+        lang,
+        "What should I call you?",
+        "Nikuite nani?",
+        "Nikuite nani?"
+    )
+
+    fun nicknameSet(name: String, lang: AppLanguage): String = pick(
+        lang,
+        "Got it, $name. Nice talking to you.",
+        "Sawa, $name. Vizuri kuongea nawe.",
+        "Sawa, $name. Poa kuongea nawe."
+    )
+
+    fun summarizeNickname(name: String, lang: AppLanguage): String = pick(
+        lang,
+        "Call you $name?",
+        "Nikuite $name?",
+        "Nikuite $name?"
+    )
+
     fun summarizeReminder(title: String, label: String, lang: AppLanguage): String = pick(
         lang,
         "Set reminder?\n$title · $label",

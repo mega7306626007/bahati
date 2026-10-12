@@ -297,6 +297,83 @@ class BuddyPhaseOneTest {
     }
 
     @Test
+    fun `remember phrase drafts a contact`() {
+        val intent = BuddyIntentRouter.route("remember Nancy as mom").intent
+        assertTrue(intent is BuddyIntent.CreateContact)
+        val c = intent as BuddyIntent.CreateContact
+        assertEquals("nancy", c.name)
+        assertEquals("mom", c.relationship)
+    }
+
+    @Test
+    fun `contact draft proposes a confirmable command`() {
+        val outcome = BuddyPhaseOne.handle("remember Nancy as mom", state(), ledger(), merchants())
+        assertTrue(outcome is BuddyOutcome.ProposeCommand)
+        val cmd = (outcome as BuddyOutcome.ProposeCommand).command
+        assertTrue(cmd is com.pesaflow.app.ui.buddy.BuddyCommand.AddContactRule)
+        val add = cmd as com.pesaflow.app.ui.buddy.BuddyCommand.AddContactRule
+        assertTrue(add.name.contains("nancy", ignoreCase = true))
+    }
+
+    @Test
+    fun `food add goes to pantry not ledger`() {
+        val intent = BuddyIntentRouter.route("add unga 2kg to shelf").intent
+        assertTrue(intent is BuddyIntent.CreateStock)
+        val s = intent as BuddyIntent.CreateStock
+        assertTrue(s.name?.contains("unga") == true)
+        assertEquals(2.0, s.qty ?: -1.0, 0.01)
+    }
+
+    @Test
+    fun `non food buy still searches the ledger`() {
+        val intent = BuddyIntentRouter.route("buy lunch at 250").intent
+        assertTrue(intent is BuddyIntent.LogPurchase)
+    }
+
+    @Test
+    fun `stock draft proposes a confirmable command`() {
+        val outcome = BuddyPhaseOne.handle("stock unga 2", state(), ledger(), merchants())
+        assertTrue(outcome is BuddyOutcome.ProposeCommand)
+        val cmd = (outcome as BuddyOutcome.ProposeCommand).command
+        assertTrue(cmd is com.pesaflow.app.ui.buddy.BuddyCommand.AddStockItem)
+    }
+
+    @Test
+    fun `used food drafts pantry use`() {
+        val intent = BuddyIntentRouter.route("used unga today").intent
+        assertTrue(intent is BuddyIntent.UseStock)
+        assertEquals("unga", (intent as BuddyIntent.UseStock).name)
+    }
+
+    @Test
+    fun `call me sets the nickname`() {
+        val outcome = BuddyPhaseOne.handle("call me Mo", state(), ledger(), merchants())
+        assertTrue(outcome is BuddyOutcome.ExecuteNow)
+        val cmd = (outcome as BuddyOutcome.ExecuteNow).command
+        assertTrue(cmd is com.pesaflow.app.ui.buddy.BuddyCommand.SetNickname)
+        assertEquals("mo", (cmd as com.pesaflow.app.ui.buddy.BuddyCommand.SetNickname).name)
+    }
+
+    @Test
+    fun `retrieval ranks ledger first then guides`() {
+        val rows = ledger() + ledgerTx("t5", "NAIVAS MOI AVENUE", 850.0, "Shopping", 1000L)
+        val chunks = com.pesaflow.app.ui.buddy.BuddyRetrieval.retrieve("naivas 850", rows)
+        assertTrue(chunks.isNotEmpty())
+        assertEquals("ledger", chunks.first().source)
+        val guides = com.pesaflow.app.ui.buddy.BuddyRetrieval.retrieve("kabete", emptyList())
+        assertTrue(guides.any { it.source == "campus guide" })
+        val capped = com.pesaflow.app.ui.buddy.BuddyRetrieval.retrieve("naivas", rows, maxChunks = 2)
+        assertTrue(capped.size <= 2)
+    }
+
+    @Test
+    fun `find answers cite their sources`() {
+        val outcome = BuddyPhaseOne.handle("show my transport spending", state(), ledger(), merchants())
+        assertTrue(outcome is BuddyOutcome.Answer)
+        assertTrue((outcome as BuddyOutcome.Answer).text.contains("Sources:"))
+    }
+
+    @Test
     fun `simulated purchases stay simulations`() {
         val intent = BuddyIntentRouter.route("simulate buying shoes at 2800").intent
         assertTrue(intent is BuddyIntent.SimulatePurchase)

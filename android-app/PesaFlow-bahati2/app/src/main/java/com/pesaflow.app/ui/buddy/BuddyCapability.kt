@@ -97,6 +97,30 @@ object BuddyCapabilities {
             needsConfirmation = true, domain = "ledger"
         ),
         BuddyCapability(
+            "contact.add_rule", "Remember a person",
+            "Files someone as a contact rule (name, relationship, category) behind a confirm card.",
+            BuddyIntent.CreateContact(null, null, null), BuddyRiskClass.APP_CONTROL,
+            needsConfirmation = true, domain = "contacts"
+        ),
+        BuddyCapability(
+            "stock.add", "Stock the pantry",
+            "Adds a foodstuff to the kitchen shelf behind a confirm card.",
+            BuddyIntent.CreateStock(null, null), BuddyRiskClass.APP_CONTROL,
+            needsConfirmation = true, domain = "kitchen"
+        ),
+        BuddyCapability(
+            "stock.use", "Log pantry use",
+            "Files a day of use off a shelf item behind a confirm card.",
+            BuddyIntent.UseStock(null), BuddyRiskClass.APP_CONTROL,
+            needsConfirmation = true, domain = "kitchen"
+        ),
+        BuddyCapability(
+            "app.nickname", "Set nickname",
+            "Changes what Buddy calls you. Applies immediately.",
+            BuddyIntent.SetNickname(null), BuddyRiskClass.APP_CONTROL,
+            needsConfirmation = false, domain = "settings"
+        ),
+        BuddyCapability(
             "txn.delete", "Delete transactions",
             "Undoable ledger delete behind a confirm card. Never bulk.",
             BuddyIntent.Delete(null, null), BuddyRiskClass.DESTRUCTIVE,
@@ -256,6 +280,10 @@ object BuddyCapabilities {
         is BuddyIntent.FindTransactions -> all.first { it.id == "txn.find" }
         is BuddyIntent.Reclassify -> all.first { it.id == "txn.reclassify" }
         is BuddyIntent.LogPurchase -> all.first { it.id == "txn.log_purchase" }
+        is BuddyIntent.CreateContact -> all.first { it.id == "contact.add_rule" }
+        is BuddyIntent.CreateStock -> all.first { it.id == "stock.add" }
+        is BuddyIntent.UseStock -> all.first { it.id == "stock.use" }
+        is BuddyIntent.SetNickname -> all.first { it.id == "app.nickname" }
         is BuddyIntent.Delete -> all.first { it.id == "txn.delete" }
         is BuddyIntent.ResolvedReclassify -> all.first { it.id == "txn.reclassify" }
         is BuddyIntent.ResolvedDelete -> all.first { it.id == "txn.delete" }
