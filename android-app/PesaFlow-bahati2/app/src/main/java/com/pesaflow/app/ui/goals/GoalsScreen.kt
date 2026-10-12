@@ -1,5 +1,6 @@
 package com.pesaflow.app.ui.goals
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,7 +14,10 @@ import androidx.compose.ui.unit.dp
 import com.pesaflow.app.data.models.SavingsGoal
 import com.pesaflow.app.data.models.Transaction
 import com.pesaflow.app.data.analytics.*
+import com.pesaflow.app.R
+import com.pesaflow.app.ui.theme.CinematicBackdrop
 import com.pesaflow.app.ui.theme.PesaWarningContainer
+import com.pesaflow.app.ui.theme.TintSavingsGrowth
 
 @Composable
 fun GoalsScreen(
@@ -26,7 +30,9 @@ fun GoalsScreen(
     val suggestion = remember(goals, transactions) {
         suggestNewGoal(transactions, goals)
     }
-    LazyColumn(modifier = Modifier.padding(16.dp)) {
+    Box(Modifier.fillMaxSize()) {
+        CinematicBackdrop(workspaceTint = TintSavingsGrowth, bgRes = R.drawable.bg_savings)
+        LazyColumn(modifier = Modifier.padding(16.dp)) {
         item {
             Text("🎯 Savings Goals", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
@@ -72,5 +78,6 @@ fun GoalsScreen(
             }
         }
         item { Spacer(modifier = Modifier.height(80.dp)) }
+        }
     }
 }

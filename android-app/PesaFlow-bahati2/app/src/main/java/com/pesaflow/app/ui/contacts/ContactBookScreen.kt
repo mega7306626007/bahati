@@ -1,6 +1,7 @@
 package com.pesaflow.app.ui.contacts
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +20,9 @@ import androidx.compose.ui.unit.dp
 import com.pesaflow.app.data.ledger.ContactBook
 import com.pesaflow.app.data.ledger.ContactEntry
 import com.pesaflow.app.data.ledger.normalizeContact
+import com.pesaflow.app.R
+import com.pesaflow.app.ui.theme.CinematicBackdrop
+import com.pesaflow.app.ui.theme.TintSearchTeal
 
 // TODO(REMOVE_BEFORE_PRODUCTION): testing-only contact dump/restore lives
 // behind this flag so reinstalls don't wipe the test setup. Delete the flag,
@@ -66,7 +70,9 @@ fun ContactBookScreen(
         }
     }.sortedByDescending { it.lastSeen }
 
-    Scaffold(
+    Box(Modifier.fillMaxSize()) {
+        CinematicBackdrop(workspaceTint = TintSearchTeal, bgRes = R.drawable.bg_search_teal)
+        Scaffold(
         topBar = {
             TopAppBar(title = { Text("Contact Book") })
         },
@@ -74,7 +80,8 @@ fun ContactBookScreen(
             FloatingActionButton(onClick = { showAdd = true }) {
                 Icon(Icons.Filled.Add, contentDescription = "Add contact")
             }
-        }
+        },
+        containerColor = androidx.compose.ui.graphics.Color.Transparent
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             Text(
@@ -193,6 +200,7 @@ fun ContactBookScreen(
                 }
             }
         }
+    }
     }
 
     if (showAdd) {

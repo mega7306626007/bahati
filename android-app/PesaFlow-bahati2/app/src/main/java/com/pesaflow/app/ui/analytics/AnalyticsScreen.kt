@@ -20,6 +20,10 @@ import com.pesaflow.app.ui.theme.PpSectionHeader
 import com.pesaflow.app.ui.theme.ppColors
 import com.pesaflow.app.ui.theme.ppSpacing
 import com.pesaflow.app.ui.theme.ppTypography
+import androidx.compose.foundation.layout.Box
+import com.pesaflow.app.R
+import com.pesaflow.app.ui.theme.CinematicBackdrop
+import com.pesaflow.app.ui.theme.TintInsightsGraph
 
 @Composable
 fun AnalyticsScreen(
@@ -36,7 +40,9 @@ fun AnalyticsScreen(
     fun toggleQ(q: String) {
         openQ = if (openQ == q) null else q
     }
-    LazyColumn(
+    Box(Modifier.fillMaxSize()) {
+        CinematicBackdrop(workspaceTint = TintInsightsGraph, bgRes = R.drawable.bg_insights_graph)
+            LazyColumn(
         modifier = Modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
@@ -191,6 +197,7 @@ fun AnalyticsScreen(
         }
         }
         item { Spacer(modifier = Modifier.height(80.dp)) }
+    }
     }
 }
 

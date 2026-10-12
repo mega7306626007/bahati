@@ -1,5 +1,6 @@
 package com.pesaflow.app.ui.recurring
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,7 +16,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.pesaflow.app.data.models.Transaction
 import com.pesaflow.app.data.analytics.*
+import com.pesaflow.app.R
+import com.pesaflow.app.ui.theme.CinematicBackdrop
 import com.pesaflow.app.ui.theme.PesaWarningContainer
+import com.pesaflow.app.ui.theme.TintBillsSteel
 
 @Composable
 fun RecurringScreen(
@@ -35,7 +39,9 @@ fun RecurringScreen(
     val liveAtRisk = remember(preview, dismissed) {
         preview.atRisk.filter { dismissKey(it) !in dismissed }
     }
-    LazyColumn(modifier = Modifier.padding(16.dp)) {
+    Box(Modifier.fillMaxSize()) {
+        CinematicBackdrop(workspaceTint = TintBillsSteel, bgRes = R.drawable.bg_bills_steel)
+        LazyColumn(modifier = Modifier.padding(16.dp)) {
         item {
             Text("🔁 Recurring Transactions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             val yearlyTotal = preview.patterns.sumOf { it.amount * (365.0 / it.medianIntervalDays.coerceAtLeast(1)) }
@@ -149,5 +155,6 @@ fun RecurringScreen(
             }
         }
         item { Spacer(modifier = Modifier.height(80.dp)) }
+        }
     }
 }

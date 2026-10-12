@@ -35,15 +35,15 @@ fun CinematicBackdrop(
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    alpha = 0.20f
+                    alpha = 0.32f
                 )
             }
             Box(
                 Modifier.fillMaxSize().background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color.White.copy(alpha = 0.45f),
-                            LightBackground.copy(alpha = 0.94f)
+                            Color.White.copy(alpha = 0.30f),
+                            LightBackground.copy(alpha = 0.82f)
                         )
                     )
                 )

@@ -1,5 +1,6 @@
 package com.pesaflow.app.ui.notifications
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,6 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.pesaflow.app.data.notifications.*
 import com.pesaflow.app.data.models.*
+import com.pesaflow.app.R
+import com.pesaflow.app.ui.theme.CinematicBackdrop
+import com.pesaflow.app.ui.theme.TintSettingsNeutral
 
 @Composable
 fun NotificationCenter(
@@ -24,7 +28,9 @@ fun NotificationCenter(
     onDismiss: (NotificationEvent) -> Unit = {}
 ) {
     val visible = events.filter { eventKey(it) !in dismissedKeys }
-    LazyColumn(modifier = Modifier.padding(16.dp)) {
+    Box(Modifier.fillMaxSize()) {
+        CinematicBackdrop(workspaceTint = TintSettingsNeutral, bgRes = R.drawable.bg_settings_neutral)
+        LazyColumn(modifier = Modifier.padding(16.dp)) {
         item {
             Text("Notifications (${visible.size})", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
@@ -54,6 +60,7 @@ fun NotificationCenter(
             }
         }
         item { Spacer(modifier = Modifier.height(80.dp)) }
+        }
     }
 }
 

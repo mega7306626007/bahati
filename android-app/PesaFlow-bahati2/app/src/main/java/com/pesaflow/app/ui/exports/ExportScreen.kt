@@ -15,6 +15,10 @@ import androidx.compose.ui.unit.dp
 import com.pesaflow.app.data.models.*
 import com.pesaflow.app.data.exports.ExportEngine
 import com.pesaflow.app.data.ledger.Watchlist
+import androidx.compose.foundation.layout.Box
+import com.pesaflow.app.R
+import com.pesaflow.app.ui.theme.CinematicBackdrop
+import com.pesaflow.app.ui.theme.TintReports
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -57,7 +61,9 @@ fun ExportScreen(
         openSection = if (openSection == section) null else section
     }
 
-    LazyColumn(modifier = Modifier.padding(16.dp)) {
+    Box(Modifier.fillMaxSize()) {
+        CinematicBackdrop(workspaceTint = TintReports, bgRes = R.drawable.bg_reports)
+            LazyColumn(modifier = Modifier.padding(16.dp)) {
         item {
             Text("📤 Export & Backup", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
@@ -265,6 +271,7 @@ val file = java.io.File(pdfContext.cacheDir, "pesaflow-statement-$safeStamp.pdf"
         }
         }
         item { Spacer(modifier = Modifier.height(80.dp)) }
+        }
     }
 }
 
